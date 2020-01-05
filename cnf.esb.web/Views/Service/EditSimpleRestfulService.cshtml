@@ -1,0 +1,334 @@
+@using cnf.esb.web.Models
+@model SimpleRestfulDescriptorViewModel
+
+@{
+    ViewData["Title"]="API";
+    ViewBag.ServiceJson = Newtonsoft.Json.JsonConvert.SerializeObject(Model);
+
+    var returnEnumType = typeof(SimpleRESTfulReturn);
+    var successEnumType = typeof(SimpleRESTfulSuccess); 
+}
+
+<div class="page-header">
+    <h4>简单RESTful服务定义</h4>
+    <p class="text-muted small">
+        简单RESTful服务向客户开放一个可通过HTTP或HTTPS协议直接请求的API，客户可以通过路由、查询字符串
+        、表单或JSON向该API传递输入参数，并得到JSON类型的输出响应。
+    </p>
+</div>
+<div class="card">
+    <div class="card-body">
+        <h6 class="card-title">
+        @if(Model.ActiveStatus==true)
+        {
+            <span class="badge badge-success">已启用</span>
+        }
+        else
+        {
+            <span class="badge badge-secondary">已停用</span>
+        }
+        API名称：@Html.DisplayTextFor(m=>m.ServiceName)
+        </h6>
+        <div>
+            <form role="form" method="post">     
+                <input type="hidden" name="ServiceJson" id="ServiceJson" value="@ViewBag.ServiceJson"/>        
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="form-inline row">
+                    <div class="form-group">
+                        <label asp-for="Method" class="col-form-label col-form-label-sm mr-2"></label>
+                        <select asp-for="Method" asp-items="@Html.GetEnumSelectList<HttpMethod>()"
+                            class="form-control form-control-sm"></select>
+                    </div>
+                    <div class="form-group ml-2">
+                        <input asp-for="BaseApiUrl" class="form-control form-control-sm" style="width:30rem;">
+                        <span asp-validation-for="BaseApiUrl" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="card mt-2">
+                    <div class="card-body">
+                        <h6 class="card-title">请求头（Request Headers）</h6>
+                        <p class="text-muted small">
+                            请求头是一个Key/Value字典，它提供了服务要求的头部信息，
+                            简单RESTful服务请求头部字典不支持参数化，而是固定值。
+                        </p>
+                        <table class="table table-bordered table-sm">
+                            <thead class="bg-secondary text-white">
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var item in Model.Headers)
+                            {
+                                <tr>
+                                    <td>@Html.DisplayFor(m=>item.Key)</td>
+                                    <td>@Html.DisplayFor(m=>item.Value)</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-default p-0"
+                                             asp-action="RemoveHeader"
+                                             asp-route-headerKey="@item.Key">Del</button>
+                                    </td>
+                                </tr>
+                            }
+                                <tr>
+                                    <td>
+                                        <input class="form-control form-control-sm w-100"
+                                            asp-for="NewHeaderKey" placeholder="请求头数据键" >
+                                    </td>
+                                    <td>
+                                        <input class="form-control form-control-sm w-100"
+                                            asp-for="NewHeaderValue" placeholder="请求头值字符串" >
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-default p-0"
+                                            asp-action="AddHeader">Add</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        @if(ViewData.ContainsKey("AddHeaderError")
+                            && ViewData["AddHeaderError"].ToString().Length > 0)
+                        {
+                            <div class="alert alert-danger">
+                                @ViewData["AddHeaderError"]
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="card mt-2">
+                    <div class="card-header p-0 pt-2 border-bottom-0">
+                        <h6 class="ml-4">请求输入参数（Parameters）</h6>
+                        @Html.HiddenFor(m=>m.SelectedTab)
+                        <nav>
+                            <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                                <a class="nav-item nav-link" id="nav-route-tab" 
+                                    data-toggle="tab" href="#nav-route" role="tab" 
+                                    onclick="setActiveTab('nav-route');"
+                                    aria-controls="nav-route" aria-selected="true">路由参数</a>
+                                <a class="nav-item nav-link" id="nav-query-tab" 
+                                    data-toggle="tab" href="#nav-query" role="tab" 
+                                    onclick="setActiveTab('nav-query');"
+                                    aria-controls="nav-query" aria-selected="false">查询字符串</a>
+                                <a class="nav-item nav-link" id="nav-form-tab" 
+                                    data-toggle="tab" href="#nav-form" role="tab"
+                                    onclick="setActiveTab('nav-form');" 
+                                    aria-controls="nav-form" aria-selected="false">发送表单</a>
+                                <a class="nav-item nav-link" id="nav-json-tab" 
+                                    data-toggle="tab" href="#nav-json" role="tab" 
+                                    onclick="setActiveTab('nav-json');"
+                                    aria-controls="nav-json" aria-selected="false">发送JSON</a>
+                            </div>
+                        </nav>
+                   </div>
+                   <div class="card-body">
+                        <div class="tab-content" id="nav-tabContent">
+                            <div class="tab-pane fade form-inline" id="nav-route" 
+                                role="tabpanel" aria-labelledby="nav-route-tab">
+                                <p class="text-muted small">
+                                    <strong>路由参数（Route）是在调用API时直接附加到调用方法URL后面的值。</strong>
+                                    <br>
+                                    例如：
+                                    调用方法为<code class="ml-2">GET http://10.1.2.102:9999/api/getOrder</code><br>
+                                    路由参数模板为<code class="ml-2">userId/orderId</code><br>
+                                    如果在实例中定义了映射<code class="ml-2">coUserId=>userId, coOrderId=>orderId</code><br>
+                                    那么在一次实际的API调用中，如果客户传入了<code class="ml-2">coUserId=21, coOrderId=1875</code>,最后实际执行的URI就是：<br>
+                                    <span class="text-primary bg-light ml-4 px-1 border"><strong>GET http://10.1.2.102:9999/api/getOrder/21/1875</strong></span>
+                                    <ul>
+                                        <li class="text-muted small">路由参数是用来映射客户端输入参数的，实际上它并不出现在最后的调用URI中</li>
+                                        <li class="text-muted small">路由参数名词允许大小写字母、数字和下划线，但处理时大小写不敏感</li>
+                                        <li class="text-muted small">多个路由参数之间使用/分割，实际传入值会经过UrlEncode后拼接到URI末尾</li>
+                                        <li class="text-muted small">GET和POST都可以使用路由参数，并且路由参数也可以和其他类型输入参数并存</li>
+                                    </ul>
+                                </p>
+                                <div class="form-group">
+                                    <label asp-for="RouteDataTemplate" class="col-form-label col-form-label-sm mr-2"></label>
+                                    <input asp-for="RouteDataTemplate" class="form-control form-control-sm" style="min-width:15rem;max-width:40rem;width:80%;"/>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade form-inline" id="nav-query" 
+                                ole="tabpanel" aria-labelledby="nav-query-tab">
+                                <p class="text-muted small">
+                                    <strong>查询字符串（Query String）是在调用API时附加到调用方法URL后面的参数/值对。</strong>
+                                    <br>
+                                    例如：
+                                    调用方法为<code class="ml-2">GET http://10.1.2.102:9999/api/getOrder</code><br>
+                                    查询字符串模板为<code class="ml-2">userId=&orderId=</code><br>
+                                    如果在实例中定义了映射<code class="ml-2">coUserId=>userId, coOrderId=>orderId</code><br>
+                                    那么在一次实际的API调用中，如果客户传入了<code class="ml-2">coUserId=21, coOrderId=1875</code>,最后实际执行的URI就是：<br>
+                                    <span class="text-primary bg-light ml-4 px-1 border"><strong>GET http://10.1.2.102:9999/api/getOrder?userId=21&orderId=1875</strong></span>
+                                    <ul>
+                                        <li class="text-muted small">查询字符串模板中的参数可以映射到客户端的输入参数，ESB使用这些参数名称和映射的参数值组合实际查询字符串提交</li>
+                                        <li class="text-muted small">参数定义需要符合URL关于查询字符串的规则，并且处理时大小写不敏感</li>
+                                        <li class="text-muted small">查询字符串模板中可以不提供?和=，ESB会根据需要进行必要的处理</li>
+                                        <li class="text-muted small">GET和POST都可以使用查询字符串，并且可以和其他类型输入参数并存，但不能重名</li>
+                                    </ul>
+                                </p>
+                                <div class="form-group">
+                                    <label asp-for="QueryStringTemplate" class="col-form-label col-form-label-sm mr-2"></label>
+                                    <input asp-for="QueryStringTemplate" class="form-control form-control-sm" style="min-width:15rem;max-width:40rem;width:80%;"/>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade form-inline" id="nav-form" 
+                                role="tabpanel" aria-labelledby="nav-form-tab">
+                                <p class="text-muted small">
+                                    <strong>表单数据（Form Body）是在调用API时写入请求体（Request Body）的参数/值对。</strong>
+                                    <br>
+                                    例如：
+                                    调用方法为<code class="ml-2">POST http://10.1.2.102:9999/api/getOrder</code><br>
+                                    发送表单模板为<code class="ml-2">userId=&orderId=</code><br>
+                                    如果在实例中定义了映射<code class="ml-2">coUserId=>userId, coOrderId=>orderId</code><br>
+                                    那么在一次实际的API调用中，如果客户传入了<code class="ml-2">coUserId=21, coOrderId=1875</code>,最后实际执行的URI就是：<br>
+                                    <span class="text-primary bg-light ml-4 px-1 border"><strong>POST http://10.1.2.102:9999/api/getOrder</strong></span>
+                                    <br>但发送的请求体（Body）中包含<code class="ml-6">userId=21&orderId=1875</code>
+                                    <ul>
+                                        <li class="text-muted small">发送表单模板中的参数映射到客户端的输入参数，ESB使用这些参数名称和映射的参数值组合成请求体</li>
+                                        <li class="text-muted small">参数定义需要符合URL关于表单控件名称的规则，并且大小写不敏感</li>
+                                        <li class="text-muted small">发送表单模板中必须不能有?，但可以不提供=，ESB会根据需要进行必要的处理</li>
+                                        <li class="text-muted small">只有POST方法才支持发送表单模板，不能与发送JSON并存，可以和查询参数并存但是不能重名</li>
+                                    </ul>
+                                </p>
+                                <div class="form-group">
+                                    <label asp-for="FormBodyTemplate" class="col-form-label col-form-label-sm mr-2"></label>
+                                    <input asp-for="FormBodyTemplate" class="form-control form-control-sm" style="min-width:15rem;max-width:40rem;width:80%;"/>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="nav-json" 
+                                role="tabpanel" aria-labelledby="nav-json-tab">
+                                <p class="text-muted small">
+                                    <strong>JSON是通过请求体发送的对象，它只能用于POST方法，ESB描述了
+                                        API需要的JSON语义，并使用JSON Path作为请求参数模板。</strong>
+                                    <br>
+                                    定义客户向服务发送的JSON对象模板的方法如下：
+                                    <ul>
+                                        <li class="text-muted small">确保“发送表单”参数模板是空白的，因为发送表单和发送JSON是互斥的</li>
+                                        <li class="text-muted small">如果已经定义了JSON模板，需要取消，请点击“删除JSON模板”按钮</li>
+                                        <li class="text-muted small">如果尚未定义JSON模板，点击“创建JSON模板”按钮</li>
+                                    </ul>
+                                </p>
+                                <div>
+                                    @if(ViewData["JsonTemplateError"] != null && !string.IsNullOrWhiteSpace(ViewData["JsonTemplateError"].ToString()))
+                                    {
+                                        <div class="alert alert-danger">
+                                            @ViewData["JsonTemplateError"]
+                                        </div>
+                                    }
+                                    @if(Model.JsonBodyTemplate == null)
+                                    {
+                                        <p class="text-danger ml-4">
+                                            尚未定义JSON模板。
+                                        </p>
+                                        <div class="form-group">
+                                            <button asp-action="CreateJson" class="btn btn-sm btn-success">创建JSON模板</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button asp-action="EditJson" asp-route-jsonPath="" class="btn btn-sm btn-info ml-2">修改JSON模板</button>
+                                        <button asp-action="DeleteJson" class="btn btn-sm btn-danger ml-2"
+                                            onclick="if(confirm('删除json模板定义是不可恢复的，请问确定要删除此模板吗？')==false)return false;">删除JSON模板</button>
+                                        <div class="card mt-2">
+                                            <div class="card-body">
+                                                @Html.DisplayFor(m=>m.JsonBodyTemplate)
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                   </div>
+                </div>
+                <div class="card mt-2">
+                    <div class="card-header">
+                        <h6 class="ml-4">服务返回定义</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col">
+                                <span>返回值类型：</span>
+                                <div class="pl-2">
+                                @foreach(var returnName in Enum.GetNames(returnEnumType))
+                                {
+                                    <div class="form-check">
+                                        <input asp-for="ReturnType" type="radio" value="@returnName" class="form-check-input"/> 
+                                        <label class="form-check-label">
+                                            @StringHelper.GetEnumDisplayName(returnEnumType, returnName)
+                                        </label>
+                                    </div>
+                                }
+                                </div>
+                                @if(!string.IsNullOrWhiteSpace(ViewData["ReturnJsonError"]?.ToString()))
+                                {
+                                    <div class="alert alert-danger">
+                                        @ViewData["ReturnJsonError"]
+                                    </div>
+                                }
+                                <div>
+                                    @if(Model.ReturnJsonTemplate != null){@Html.DisplayFor(m=>m.ReturnJsonTemplate)}
+                                    <div class="mt-2">
+                                        <button asp-action="EditReturnJson"
+                                            class="btn btn-sm btn-info ml-2">定义返回值JSON模板</button>
+                                    @if(Model.ReturnJsonTemplate != null)
+                                    {
+                                        <button asp-action="DeleteReturnJson" 
+                                            class="btn btn-sm btn-danger ml-2"
+                                            onclick="if(confirm('删除json模板定义是不可恢复的，请问确定要删除此模板吗？')==false)return false;">删除JSON模板</button>
+                                    }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <span>表示成功的规则：</span>
+                                <div class="pl-2">
+                                @foreach(var successName in Enum.GetNames(successEnumType))
+                                {
+                                    <div class="form-check">
+                                        <input asp-for="SuccessRule" type="radio" value="@successName" class="form-check-input" /> 
+                                        <label class="form-check-label">
+                                            @StringHelper.GetEnumDisplayName(successEnumType, successName)
+                                        </label>
+                                    </div>
+                                }
+                                </div>
+                                <div class="form-group form-inline my-2">
+                                    <label asp-for="SuccessPath" class="mr-2">JSON-Path:</label>
+                                    <input asp-for="SuccessPath" class="form-control form-control-sm"
+                                        style="min-width:16rem;" placeholder="输入表示成功状态的JPath">
+                                </div>
+                                <div class="form-group form-inline">
+                                    <label asp-for="SuccessRegx" class="mr-2">正则表达式:</label>
+                                    <input asp-for="SuccessRegx" class="form-control form-control-sm"
+                                        style="min-width:16rem;" placeholder="输入用来匹配成功的正则表达式">
+                                </div>
+                                <div class="form-group form-inline">
+                                    <label asp-for="IgnoreCase" class="form-check-label mr-2">匹配正则忽略大小写：</label>
+                                    <input asp-for="IgnoreCase" class="form-check-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <button class="btn btn-primary btn-lg" asp-action="SaveSimpleRestfulService">保存并返回</button>
+                    <a asp-action="Index" 
+                        onclick="if(confirm('直接返回列表将丢弃本次管理活动尚未保存的全部修改，确实要返回吗？')==false)return false;" 
+                        class="btn btn-default">返回注册服务列表</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        function setActiveTab(name){
+            $('#SelectedTab').val(name);
+        }
+
+        var active_tab = $('#SelectedTab').val();
+        var active_tab_head = active_tab + '-tab';
+        $('#' + active_tab).addClass('show active');
+        $('#' + active_tab_head).addClass('active');
+    </script>
+}

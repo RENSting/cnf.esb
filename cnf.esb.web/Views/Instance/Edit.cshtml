@@ -1,0 +1,92 @@
+@model cnf.esb.web.Models.InstanceViewModel
+
+@{
+    ViewData["Title"]="实例";
+    IEnumerable<SelectListItem> consumers = (IEnumerable<SelectListItem>)ViewData["Consumers"];
+}
+<div class="page-header">
+    <h4>即将创建调用"@Model.ServiceName"API的新实例</h4>
+    <p class="text-muted small">
+        选择调用服务的客户程序，根据客户程序调用时传递的JSON对象给服务参数设置取值方法
+    </p>
+</div>
+
+<form asp-action="Edit" role="form" method="post">
+    @Html.HiddenFor(m=>m.InstanceID)
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-group">
+        <label asp-for="InstanceName" class="col-form-label col-form-label-sm"></label>
+        <input asp-for="InstanceName" class="form-control form-control-sm"/>
+        <span asp-validation-for="InstanceName" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Description" class="col-form-label col-form-label-sm"></label>
+        <textarea class="form-control form-control-sm" rows="3" asp-for="Description" placeholder="输入对调用实例的详细说明"></textarea>
+    </div>
+    <div class="row">
+        <div class="col">
+            <div class="form-inline">
+                <label asp-for="ClientID" class="col-form-label col-form-label-sm">请选择客户程序：</label>
+                <select asp-for="ClientID" class="form-control form-control-sm mx-2" 
+                    style="min-width:12rem;" asp-items="@consumers"></select>
+                @Html.HiddenFor(m=>m.ServiceID)
+                @Html.HiddenFor(m=>m.ServiceName)
+            </div>
+        </div>
+        <div class="col">
+            <div class="custom-control custom-checkbox pt-1">
+                <input asp-for="ActiveStatus" class="custom-control-input">
+                <label class="custom-control-label" asp-for="ActiveStatus"></label>
+            </div>
+        </div>
+    </div>
+@if(Model.ParameterMappings != null)
+{
+    <table class="table table-sm table-bordered mt-2">
+        <thead class="bg-secondary text-white">
+            <tr>
+                <th>@Html.DisplayNameFor(m=>m.ParameterMappings[0].Source)</th>
+                <th>@Html.DisplayNameFor(m=>m.ParameterMappings[0].ServerPath)</th>
+                <th>@Html.DisplayNameFor(m=>m.ParameterMappings[0].MappingType)</th>
+                <th>@Html.DisplayNameFor(m=>m.ParameterMappings[0].ClientPath)</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach(var item in Model.ParameterMappings)
+        {
+            <tr>
+                <td>
+                    <input asp-for="@item.Source" readonly 
+                        class="form-control-plaintext form-control-sm">
+                </td>
+                <td>
+                    <input asp-for="@item.ServerPath" readonly 
+                        class="form-control-plaintext form-control-sm">
+                </td>
+                <td>
+                    @Html.HiddenFor(m=>item.MappingType)
+                    <select asp-for="@item.MappingType" disabled
+                        asp-items="@Html.GetEnumSelectList<cnf.esb.web.Models.MappingType>()"
+                        class="form-control-plaintext form-control-sm w-100"></select>
+                </td>
+                <td>
+                    <input asp-for="@item.ClientPath" readonly
+                        class="form-control-plaintext form-control-sm">
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+    <div class="form-group mt-2">
+        <input type="submit" value="提交保存" class="btn btn-primary"/>
+    </div>
+</form>
+
+<div>
+    <a asp-action="Index" asp-controller="Service">返回注册服务目录</a>
+</div>
+
+@section Scripts{
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

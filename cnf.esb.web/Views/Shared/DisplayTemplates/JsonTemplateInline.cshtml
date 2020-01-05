@@ -1,0 +1,14 @@
+@model cnf.esb.web.Models.JsonTemplate
+<span class="badge badge-info">
+    @Html.DisplayTextFor(m=>m.ValueType)
+    @if(Model.IsArray){
+        @:[数组]
+    }
+</span>
+
+@if(Model.ValueType == cnf.esb.web.Models.ValueType.Object){
+    <span class="text-muted small">(@Model.ObjectProperties?.Count.ToString()个成员)</span>
+}
+else{
+
+}

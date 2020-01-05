@@ -1,0 +1,44 @@
+@model cnf.esb.web.Models.ConsumerActionModel
+
+@{
+    ViewData["Title"]="确认";
+}
+
+<h1>确认对客户的操作</h1>
+<hr/>
+
+@{
+    string css = "alert alert-primary";
+    switch(Model.Action)
+    {
+        case ConsumerActionModel.ActionEnum.Startup:
+            css = "alert alert-primary";
+            break;
+        case ConsumerActionModel.ActionEnum.Disable:
+            css = "alert alert-warning";
+            break;
+        case ConsumerActionModel.ActionEnum.Delete:
+            css = "alert alert-danger";
+            break;
+        case ConsumerActionModel.ActionEnum.ResetToken:
+            css = "alert alert-info";
+            break;
+        default:
+            break;
+    }
+}
+
+<div class="@css">
+    @Model.ActionDescription
+</div>
+
+<form asp-action="ConfirmConsumer" asp-route-id="" method="post">
+    <input type="hidden" asp-for="ConsumerID">
+    <input type="hidden" asp-for="Action">
+    <div class="row">
+        <div class="col-md-4">
+            <input type="submit" value="确定" class="btn btn-primary">
+            <a asp-action="Index" class="btn btn-secondary">返回客户列表</a>
+        </div>
+    </div>
+</form>

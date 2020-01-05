@@ -1,0 +1,63 @@
+@using cnf.esb.web.Models
+@model IEnumerable<InstanceViewModel>
+
+@{
+    ViewData["Title"]="实例";
+}
+
+<h3>API服务调用实例清单</h3>
+
+<table class="table table-sm">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(m=>m.InstanceID)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m=>m.InstanceName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m=>m.ClientName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m=>m.ServiceName)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m=>m.CreatedOn)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m=>m.ActiveStatus)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model)
+{
+    <tr>
+        <td>
+            @Html.DisplayFor(m=>item.InstanceID)
+        </td>
+        <td>
+            @Html.DisplayFor(m=>item.InstanceName)
+        </td>
+        <td>
+            @Html.DisplayFor(m=>item.ClientName)
+        </td>
+        <td>
+            @Html.DisplayFor(m=>item.ServiceName)
+        </td>
+        <td>
+            @Html.DisplayFor(m=>item.CreatedOn)
+        </td>
+        <td>
+            @Html.DisplayFor(m=>item.ActiveStatus)
+        </td>
+        <td>
+            <a asp-action="EditInstance" asp-route-id="@item.InstanceID">修改</a>|
+            <a asp-action="Show" asp-route-id="@item.InstanceID">查看</a>
+        </td>
+    </tr>
+}
+    </tbody>
+</table>

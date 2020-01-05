@@ -1,0 +1,41 @@
+@{
+    Layout = null;
+}
+
+@model LoginViewModel
+
+<!DOCTYPE html>
+<html lang="zh">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>ESB-登录</title>
+        <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
+        <link rel="stylesheet" href="~/css/site.css" />
+    </head>
+    <body style="margin:auto; width:600px;">
+        @if(!string.IsNullOrWhiteSpace(ViewData["ErrorMessage"] as string))
+        {
+            <div class="alert alert-danger">
+                @ViewData["ErrorMessage"]
+            </div>
+        }
+        <h1>需要登录</h1>
+        <hr>
+        <div class="row">
+            <form asp-action="Login" method="post">
+                <div class="form-group">
+                    <label asp-for="UserName"></label>
+                    <input class="form-control" asp-for="UserName" placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label asp-for="Password"></label>
+                    <input class="form-control" asp-for="Password" placeholder="请输入口令">
+                </div>
+                <div class="form-group">
+                    <button type="submit" name="btnOK" class="btn btn-primary">提交验证</button>
+                </div>
+            </form>
+        </div>
+    </body>
+</html>

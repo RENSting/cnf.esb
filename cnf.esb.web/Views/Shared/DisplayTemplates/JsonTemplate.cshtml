@@ -1,0 +1,29 @@
+@model cnf.esb.web.Models.JsonTemplate
+
+<p>
+    当前定义的JSON模板：
+    <strong>@Html.DisplayTextFor(m=>m.ValueType)</strong>
+    @if(Model.IsArray){
+        <span class="badge badge-info small">数组</span>
+    }
+</p>
+@if(Model.ValueType == cnf.esb.web.Models.ValueType.Object)
+{
+    <table class="table table-sm table-bordered">
+        <thead class="bg-secondary text-white">
+            <tr>
+                <th>属性名称</th>
+                <th>数据类型</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.ObjectProperties)
+        {
+            <tr>
+                <td><strong>@Html.DisplayTextFor(m=>item.Key)</strong></td>
+                <td>@Html.DisplayFor(m=>item.Value, "JsonTemplateInline", "", null)</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

@@ -1,0 +1,117 @@
+@using cnf.esb.web.Models
+@model EsbInstance
+
+@{
+    ViewData["Title"]="API";
+}
+
+<div class="page-header">
+    <h5>
+        @Html.DisplayTextFor(m=>m.Name)
+        @if(Model.ActiveStatus == 0)
+        {
+            <span class="badge badge-secondary">已停用</span>
+        }
+        else
+        {
+            <span class="badge badge-primary">状态正常</span>
+        }
+    </h5>
+    <p class="text-muted small">
+        @Html.DisplayTextFor(m=>m.Description)
+    </p>
+</div>
+<div>
+    客户程序：@Html.DisplayTextFor(m=>m.Client.Name)
+    (IP: @Html.DisplayTextFor(m=>m.Client.HostIP)) 
+    &nbsp;&lt;&equals;&equals;&equals;&gt;&nbsp;
+    服务：<span class="badge badge-success">@Model.Service.Type.ToString()</span>
+    @Html.DisplayTextFor(m=>m.Service.Name)
+</div>
+<h5>调用日志</h5>
+@if(ViewBag.Logs == null || ViewBag.Pages == 0)
+{
+    <div class="alert alert-light">
+        此API尚无被客户调用的日志记录
+    </div>
+}
+else
+{
+<div>
+    <table class="table table-sm table-border">
+        <thead class="bg-secondary text-white">
+            <tr>
+                <th>任务GUID</th>
+                <th>记录时间</th>
+                <th>阶段</th>
+                <th>级别</th>
+                <th>来源IP</th>
+                <th>远程API</th>
+                <th>请求长度</th>
+                <th>返回长度</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in ViewBag.Logs)
+            {
+                string rowClass;
+                if(item.LogLevel == EsbLogLevel.Failure)
+                {
+                    rowClass = "text-danger";
+                }
+                else if(item.LogLevel == EsbLogLevel.Warning)
+                {
+                    rowClass = "text-warning";
+                }
+                else if(item.LogLevel == EsbLogLevel.Message)
+                {
+                    rowClass = "";
+                }
+                else
+                {
+                    rowClass = "";
+                }
+                <tr class="@rowClass">
+                    <td>@item.TaskIdentity</td>
+                    <td>@item.CreatedOn</td>
+                    <td>@item.LogLevel</td>
+                    <td>@item.Operation</td>
+                    <td>@item.FromIP</td>
+                    <td>@item.InvokedUrl</td>
+                    <td>@item.RequestLength.ToString()</td>
+                    <td>@item.ResponseLength.ToString()</td>
+                    <td>
+                        <a asp-action="LogDetails" asp-route-id="@item.ID" 
+                            class="btn btn-sm btn-default">查看详情</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <nav aria-label="API invoking logs">
+    <ul class="pagination">
+        <li class="page-item">
+            <a class="page-link" href="#" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    @for(var i = 0; i < (int)ViewBag.Pages; i++)
+    {
+        <li class="page-item">
+            <a asp-action="Show" asp-route-id="@Model.ID" asp-route-pageIndex="@i"
+                 class="page-link">@{(i+1).ToString();}</a>
+        </li>
+    }
+        <li class="page-item">
+            <a class="page-link" href="#" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    </ul>
+    </nav>
+</div>
+}
+<div class="mt-2">
+    <a asp-action="Index">返回调用实例列表</a>
+</div>

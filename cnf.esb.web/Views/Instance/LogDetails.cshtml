@@ -1,0 +1,67 @@
+@model cnf.esb.web.Models.EsbLog
+@{
+    ViewData["Title"]="日志";
+}
+
+<h5>API调用日志</h5>
+<hr>
+<dl class="row">
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(m=>m.TaskIdentity)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(m=>m.TaskIdentity)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(m=>m.CreatedOn)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(m=>m.CreatedOn)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(m=>m.FromIP)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(m=>m.FromIP)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(m=>m.InvokedUrl)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(m=>m.InvokedUrl)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(m=>m.Message)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(m=>m.Message)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(m=>m.LogLevel)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(m=>m.LogLevel)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(m=>m.Operation)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(m=>m.Operation)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(m=>m.RequestLength)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(m=>m.RequestLength)
+    </dd>
+    <dt class="col-sm-2">
+        @Html.DisplayNameFor(m=>m.ResponseLength)
+    </dt>
+    <dd class="col-sm-10">
+        @Html.DisplayFor(m=>m.ResponseLength)
+    </dd>
+</dl>
+
+<div class="mt-2">
+    <a asp-action="Show" asp-route-id="@Model.InstanceID">返回API详情页面</a>
+</div>

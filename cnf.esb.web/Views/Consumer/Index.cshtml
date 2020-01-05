@@ -1,0 +1,60 @@
+@model IEnumerable<cnf.esb.web.Models.EsbConsumer>;
+
+@{
+    ViewData["Title"]="客户";
+}
+
+<h1>已注册的客户</h1>
+
+<p>
+    <a asp-action="CreateConsumer">注册新客户</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(m=>m.ID)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m=>m.Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m=>m.HostIP)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m=>m.CreatedOn)
+            </th>
+            <th>
+                @Html.DisplayNameFor(m=>m.ActiveStatus)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model)
+{
+    <tr>
+        <td>
+            @Html.DisplayFor(m=>item.ID)
+        </td>
+        <td>
+            @Html.DisplayFor(m=>item.Name)
+        </td>
+        <td>
+            @Html.DisplayFor(m=>item.HostIP)
+        </td>
+        <td>
+            @Html.DisplayFor(m=>item.CreatedOn)
+        </td>
+        <td>
+            @Html.DisplayFor(m=>item.ActiveStatus)
+        </td>
+        <td>
+            <a asp-action="EditConsumer" asp-route-id="@item.ID">修改</a> |
+            <a asp-action="ShowConsumer" asp-route-id="@item.ID">管理</a>
+        </td>
+    </tr>
+}
+    </tbody>
+</table>

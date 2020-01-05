@@ -1,0 +1,50 @@
+@model cnf.esb.web.Models.EsbConsumer
+
+@{
+    ViewData["Title"]="修改";
+}
+
+<h1>修改客户资料</h1>
+
+<hr>
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="EditConsumer" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="ID"/>
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control"/>
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HostIP" class="control-label"></label>
+                <input asp-for="HostIP" class="form-control"/>
+                <span asp-validation-for="HostIP" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Token" class="control-label"></label>
+                <p class="form-control-static">@Model.Token</p>
+            </div>
+            <div class="form-group">
+                <label asp-for="CreatedOn" class="control-label"></label>
+                <p class="form-control-static">@Model.CreatedOn</p>
+            </div>
+            <div class="form-group">
+                <label asp-for="ActiveStatus" class="control-label"></label>
+                <p class="form-control-static">@Model.ActiveStatus</p>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="提交保存" class="btn btn-primary"/>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">返回注册客户列表</a>
+</div>
+
+@section Scripts{
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

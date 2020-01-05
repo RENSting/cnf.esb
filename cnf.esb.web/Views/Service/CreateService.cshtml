@@ -1,0 +1,50 @@
+@using cnf.esb.web.Models
+@model EsbService
+@{
+    ViewData["Title"]="新服务";
+}
+<div class="page-header">
+    <h1>注册新服务</h1>
+    <p class="text-muted small">
+        输入基本信息后创建新服务，分组可用于筛选服务，服务协定需要保存服务后通过“管理”服务链接定义。
+    </p>
+</div>
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="CreateService" asp-antiforgery="true" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="GroupName" class="control-label"></label>
+                <input asp-for="GroupName" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Type" class="control-label"></label>
+                <select asp-for="Type" asp-items="@Html.GetEnumSelectList<ServiceType>()"
+                    class="form-control"></select>
+                <span asp-validation-for="Type" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="FullDescription" class="control-label"></label>
+                <textarea asp-for="FullDescription" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="提交" class="btn btn-primary" />
+            </div>
+        </form>   
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">返回注册服务列表</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

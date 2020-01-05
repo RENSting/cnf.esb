@@ -1,0 +1,34 @@
+@model cnf.esb.web.Models.EsbConsumer;
+@{
+    ViewData["Title"]="新客户";
+}
+
+<h1>注册新客户程序</h1>
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="CreateConsumer" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Name" class="control-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HostIP" class="control-label"></label>
+                <input asp-for="HostIP" class="form-control" />
+                <span asp-validation-for="HostIP" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="提交" class="btn btn-primary" />
+            </div>
+        </form>   
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">返回注册客户列表</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

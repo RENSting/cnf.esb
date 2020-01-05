@@ -1,0 +1,152 @@
+@model cnf.esb.web.Models.EditServiceJsonViewModel
+
+@{
+    ViewData["Title"] = "JSON";
+}
+<div class="alert alert-warning small p-1 text-danger">
+    请一直使用页面提供的按钮保存或返回，千万不要使用浏览器的回退或刷新按钮，以防数据丢失。
+    <br>请谨慎切换此页面中的选择模板JSON类型下拉列表，因为一旦定义了新类型的JSON模板，原来的定义就被覆盖了。
+</div>
+<div class="page-header">
+    <h5>
+        <span class="badge badge-primary mr-2">
+            @Html.DisplayTextFor(m=>m.CurrentName)
+        </span>
+        当前路径：
+        @if(string.IsNullOrWhiteSpace(Model.CurrentPath))
+        {
+            @: (根)
+        }
+        else
+        {
+            @: (根).{@Model.CurrentPath}
+        }
+    </h5>
+    <p class="text-muted small">
+        路径（Path）是正在编辑的JSON模板相对于整个服务协定（作为根JSON）的导航路径。
+        说明了当前正在编辑的JSON对象属于整个对象的哪一层级。
+        <br><strong>(根模板)</strong>表示编辑器正在编辑的是服务协定本身的Json模板。
+        其它路径使用<strong>(.)分隔</strong>，表示当前JSON对象所属的上级对象以及它的属性名称，
+        例如：<span class="badge badge-secondary">(Company.Department.Employee.Name)</span>
+        <br>
+    </p>
+    <p class="lead text-muted small">
+        定义JSON模板需要首先选择JSON对象的类型，如果选择了对象类型，那么还需要有进一步的定义...
+    </p>
+</div>
+<form method="post">
+    @Html.HiddenFor(m=>m.ServiceDescriptor)
+    @Html.HiddenFor(m=>m.CurrentName)
+    @Html.HiddenFor(m=>m.CurrentPath)
+    @Html.HiddenFor(m=>m.CurrentJson)
+    <div class="form-inline">
+        <label asp-for="CurrentTemplate.ValueType" class="col-form-label col-form-label-sm mr-2"></label>
+        <select class="form-control form-control-sm mr-2" asp-for="CurrentTemplate.ValueType"
+            asp-items="@Html.GetEnumSelectList<cnf.esb.web.Models.ValueType>()"
+            onclick="onTypeChanged(this);"></select>
+        <label asp-for="CurrentTemplate.IsArray" class="col-form-label col-form-label-sm mx-2"></label>
+        <input asp-for="CurrentTemplate.IsArray" class="form-check-input">
+        <span class="text-muted small ml-2">如果当前JSON是一个数组，请打勾</span>
+    </div>
+    <div id="object_editor" class="card mt-2 w-50" style="min-width:30rem;">
+        <div class="card-body">
+            <table class="table table-bordered table-sm">
+                <thead class="bg-secondary text-white">
+                    <tr>
+                        <th>属性名称</th>
+                        <th>数据类型</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach(var item in Model.CurrentTemplate.ObjectProperties)
+                {
+                    <tr>
+                        <td>
+                            <strong>@Html.DisplayTextFor(m=>item.Key)</strong>
+                        </td>
+                        <td>
+                            @Html.DisplayFor(m=>item.Value, "JsonTemplateInline", "", null)
+                        </td>
+                        <td>
+                            <button asp-action="EditProperty" asp-route-propertyName="@item.Key"
+                                class="btn btn-default btn-sm p-0">Edit</button>
+                            <button asp-action="DeleteProperty" asp-route-propertyName="@item.Key"
+                                class="btn btn-default btn-sm p-0">Del</button>
+                        </td>
+                    </tr>
+                }
+                    <tr>
+                        <td>
+                          <div class="form-inline p-0 m-0">
+                            <input class="form-control form-control-sm w-100" 
+                                placeholder="新属性的名称..." asp-for="NewPropertyName">
+                          </div>
+                        </td>
+                        <td>
+                          <div class="form-inline p-0 m-0">
+                            <select class="form-control form-contrl-sm mr-2"
+                                style="height:2rem;padding:0;font-size:smaller;"
+                                asp-for="NewPropertyValue" asp-items="@Html.GetEnumSelectList<cnf.esb.web.Models.ValueType>()">
+                            </select>
+                            <label asp-for="NewPropertyIsArray" class="small">是数组
+                                <input asp-for="NewPropertyIsArray">
+                            </label>
+                          </div>  
+                        </td>
+                        <td>
+                            <button asp-action="AddProperty" class="btn btn-default btn-sm p-0">Add</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            @if(!string.IsNullOrWhiteSpace(ViewBag.ErrorMessage)){
+                <div class="alert alert-danger p-2 small">
+                    @ViewBag.ErrorMessage
+                </div>
+            }
+            <p class="lead text-muted small">
+                正在定义一个对象类型的JSON模板，点击Add向对象添加新成员，或者Edit(编辑)和Del(删除)已有的成员。
+                <br>添加成员需要输入唯一的属性名称并指明属性值的数据类型，属性名称大小写不敏感。
+                <br>如果选择了一个对象类型的成员，您还需要点击Edit对其进行更多的定义...
+            </p>
+        </div>
+    </div>
+    @if(TempData["SaveJson"] != null)
+    {
+        <div class="card text-white bg-success mt-2 p-1">
+            JSON模板定义保存成功
+        </div>
+    }
+    <div class="card mt-2">
+        <div class="card-body">
+            <button class="btn btn-primary btn-sm" asp-action="SaveJson">保存</button>
+            @if(!string.IsNullOrWhiteSpace(Model.CurrentPath))
+            {
+                <button class="btn btn-secondary btn-sm" asp-action="SaveJsonAndGoBack">保存并返回上一级</button>
+            }
+            <button class="btn btn-info btn-sm" asp-action="SaveJsonAndReturnService">保存并返回服务协定</button>
+        </div>
+    </div>
+</form>
+
+@section Scripts{
+    <script type="text/javascript">
+        function showEditor(valueType){
+            if(valueType == '5'){
+                $('#object_editor').show();
+            } //object
+            else{
+                $('#object_editor').hide();
+            } //other type
+        }
+
+        function onTypeChanged(tag){
+            showEditor($(tag).val());
+        }
+
+        var currentValueType = $("#CurrentTemplate_ValueType").val();
+        showEditor(currentValueType);
+
+    </script>
+}

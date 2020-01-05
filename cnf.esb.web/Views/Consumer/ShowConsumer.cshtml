@@ -1,0 +1,82 @@
+@model cnf.esb.web.Models.EsbConsumer
+
+@{
+    ViewData["Title"]="查看";
+}
+
+<h1>管理客户机</h1>
+<hr>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="row">
+            <div class="col-md-2">
+                <label asp-for="ID" class="control-label"></label>
+            </div>
+            <div class="col-md-10">
+                <p class="form-control-static">@Model.ID</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-2">
+                <label asp-for="Name" class="control-label"></label>
+            </div>
+            <div class="col-md-10">
+                <p class="form-control-static">@Model.Name</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-2">
+                <label asp-for="HostIP" class="control-label"></label>
+            </div>
+            <div class="col-md-10">
+                <p class="form-control-static">@Model.HostIP</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-2">
+                <label asp-for="Token" class="control-label"></label>
+            </div>
+            <div class="col-md-10">
+                <p class="form-control-static">@Model.Token</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-2">
+                <label asp-for="CreatedOn" class="control-label"></label>
+            </div>
+            <div class="col-md-10">
+                <p class="form-control-static">@Model.CreatedOn</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-2">
+                <label asp-for="ActiveStatus" class="control-label"></label>
+            </div>
+            <div class="col-md-10">
+                <p class="form-control-static">@Model.ActiveStatus</p>
+            </div>
+        </div>
+        <div class="row">
+            @if(Model.ActiveStatus==0)
+            {
+                <a asp-action="ConfirmConsumer" asp-route-id="@Model.ID" asp-route-name="@Model.Name"
+                    asp-route-act="1" class="btn btn-info">启用此客户</a>
+            }
+            else
+            {
+                <a asp-action="ConfirmConsumer" asp-route-id="@Model.ID" asp-route-name="@Model.Name"
+                    asp-route-act="2" class="btn btn-info">禁用此客户</a>
+            }
+            <a asp-action="ConfirmConsumer" asp-route-id="@Model.ID" asp-route-name="@Model.Name"
+                asp-route-act="3" class="btn btn-danger">删除此客户</a>
+            <a asp-action="ConfirmConsumer" asp-route-id="@Model.ID" asp-route-name="@Model.Name"
+                asp-route-act="4" class="btn btn-primary">重置Token</a>
+        </div>
+        <div class="row">
+            <a asp-action="Index">返回注册客户列表</a>
+        </div>
+    </div>
+</div>
+
+

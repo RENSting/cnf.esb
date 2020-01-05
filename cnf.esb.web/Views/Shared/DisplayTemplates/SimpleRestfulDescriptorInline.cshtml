@@ -1,0 +1,58 @@
+@model cnf.esb.web.Models.SimpleRestfulDescriptorViewModel
+
+@if(Model == null || !Model.IsDefined)
+{
+    <span class="badge badge-warning">
+        尚未定义
+    </span>
+}
+else
+{
+    if(!string.IsNullOrWhiteSpace(Model.BaseApiUrl))
+    {
+        <span class="badge badge-default">
+            @Html.DisplayTextFor(m=>m.Method)
+        </span>
+        <span class="badge badge-secondary">
+            @Html.DisplayTextFor(m=>m.BaseApiUrl)
+        </span>
+    }
+    if(Model.JsonBodyTemplate != null)
+    {
+        @Html.DisplayFor(m=>m.JsonBodyTemplate, "JsonTemplateInline", "", null)
+    }
+    else if(!string.IsNullOrWhiteSpace(Model.QueryStringTemplate))
+    {
+        <span class="badge badge-info">
+            Query
+        </span>
+        <span class="badge badge-default">
+            @Html.DisplayTextFor(m=>m.QueryStringTemplate)
+        </span>
+        
+    }
+    else if(!string.IsNullOrWhiteSpace(Model.RouteDataTemplate))
+    {
+        <span class="badge badge-info">
+            Route
+        </span>
+        <span class="badge badge-default">
+            @Html.DisplayTextFor(m=>m.RouteDataTemplate)
+        </span>
+    }
+    else if(!string.IsNullOrWhiteSpace(Model.FormBodyTemplate))
+    {
+        <span class="badge badge-info">
+            Form
+        </span>
+        <span class="badge badge-default">
+            @Html.DisplayTextFor(m=>m.FormBodyTemplate)
+        </span>
+    }
+    else
+    {
+        <span class="badge badge-warning">
+            尚未定义
+        </span>
+    }
+}
