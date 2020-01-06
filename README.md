@@ -25,4 +25,6 @@ Deploy with docker
 3. run the docker with attaching the local fold as volume by option:  -v {local_folder}:/app/data
 4. run the docker with port mapping by option: -p {host_port}:5001 (https) or :5000 (http)
 
+run docker simple:
+docker run -d -v /home/lee/src/cnf.esb/cnf.esb.web/data:/app/data -p 5001:5001 rensting/cnf.esb:v1
 
