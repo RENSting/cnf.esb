@@ -19,3 +19,10 @@ Main features of ESB
 (1) Caller developers can use "https://[esb_host:port]/api/help/[instance_id]" to display the contract of which consumer invoke service and the response from service;
 (2) In client app, POST data to "https://[esb_host:port]/api/invoke/[instance_id]" to cosume the API.
 
+Deploy with docker
+1. pull docker from:   rensting/cnf.esb:v1
+2. create a local folder, and copy the "esb.db" SQLite database file into it.
+3. run the docker with attaching the local fold as volume by option:  -v {local_folder}:/app/data
+4. run the docker with port mapping by option: -p {host_port}:5001 (https) or :5000 (http)
+
+
