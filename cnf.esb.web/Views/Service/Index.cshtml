@@ -75,6 +75,19 @@
                     }
                     @Html.DisplayFor(m=>descriptor, "SimpleRestfulDescriptorInline", "", null)
                 }
+                else if(item.Type == ServiceType.NCWebService)
+                {
+                    NCDescriptorViewModel descriptor;
+                    if(string.IsNullOrWhiteSpace(item.ServiceDescriptor))
+                    {
+                        descriptor = null;
+                    }
+                    else
+                    {
+                        descriptor = JsonConvert.DeserializeObject<NCDescriptorViewModel>(item.ServiceDescriptor);
+                    }
+                    @Html.DisplayFor(m=>descriptor, "NCDescriptorInline", "", null)
+                }
                 else
                 {
                     @: NOT IMP. YET

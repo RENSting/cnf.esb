@@ -15,10 +15,7 @@ namespace cnf.esb.web.Models
     /// </summary>
     public class EditServiceJsonViewModel
     {
-        /// <summary>
-        /// JSON序列化的SimpleRestfulDescriptorViewModel对象（包含服务协定基本定义）
-        /// </summary>
-        /// <value></value>
+        //public ServiceType ServiceType{get;set;}
         public string ServiceDescriptor { get; set; }
         public JsonTemplateNames CurrentName{get;set;}
         public string CurrentPath { get; set; }
@@ -32,6 +29,7 @@ namespace cnf.esb.web.Models
 
         public EditServiceJsonViewModel(EditServiceJson serviceJson)
         {
+            //ServiceType = serviceJson.ServiceType;
             ServiceDescriptor = serviceJson.ServiceDescriptor;
             CurrentName = serviceJson.CurrentName;
             CurrentPath = serviceJson.CurrentPath;
@@ -50,10 +48,14 @@ namespace cnf.esb.web.Models
 
     public enum JsonTemplateNames
     {
-        [Display(Name="向API发送的参数")]
-        Parameter,
-        [Display(Name="从API返回的值")]
-        ReturnValue
+        [Display(Name="RESTful-API参数")]
+        RESTParameter,
+        [Display(Name="RESTful-API返回值")]
+        RESTReturnValue,
+        [Display(Name="NC-API参数")]
+        NCParameter,
+        [Display(Name="NC-API返回值")]
+        NCReturn,
     }
 
     /// <summary>
@@ -61,8 +63,25 @@ namespace cnf.esb.web.Models
     /// </summary>
     public class EditServiceJson
     {
+        public ServiceType ServiceType
+        {
+            get
+            {
+                switch (CurrentName)
+                {
+                    case JsonTemplateNames.RESTParameter:
+                    case JsonTemplateNames.RESTReturnValue:
+                        return ServiceType.SimpleRESTful;
+                    case JsonTemplateNames.NCParameter:
+                    case JsonTemplateNames.NCReturn:
+                        return ServiceType.NCWebService;
+                    default:
+                        throw new Exception("not impleted json part.");
+                }
+            }
+        }
         /// <summary>
-        /// 服务协定定义时使用的SimpleRestfulDescriptorViewModel视图模型
+        /// 服务协定定义时使用的Service Descriptor ViewModel视图模型
         /// 用于编辑JSON模板过程中保存中间数据，返回服务定义编辑页面后用它更新服务定义。
         /// </summary>
         /// <value></value>
@@ -91,6 +110,26 @@ namespace cnf.esb.web.Models
         public string ErrorMessage { get; set; }
 
         /// <summary>
+        /// 根据服务类型，将ServiceDescriptor反序列化成合适的Descriptor对象。
+        /// </summary>
+        /// <returns></returns>
+        public object DeserializeServiceDescriptor()
+        {
+            if(ServiceType == ServiceType.SimpleRESTful)
+            {
+                return JsonConvert.DeserializeObject<SimpleRestfulDescriptorViewModel>(ServiceDescriptor);
+            }
+            else if(ServiceType == ServiceType.NCWebService)
+            {
+                return JsonConvert.DeserializeObject<NCDescriptorViewModel>(ServiceDescriptor);
+            }
+            else
+            {
+                throw new Exception("Not impleted service type:" + ServiceType.ToString());
+            }
+        }
+
+        /// <summary>
         /// 更新WholeJson。更新WholeJson的原因如下：
         ///     Json模板是嵌套的，当CurrentJson是复杂类型包含成员的时候，为了编辑这些成员，
         /// Json模板编辑器页面被重用，但页面仅包含CurrentJson用于就地编辑。于是，整个
@@ -99,28 +138,48 @@ namespace cnf.esb.web.Models
         /// </summary>
         public void UpdateWholeJson()
         {
-            var originDescriptor = JsonConvert.DeserializeObject<SimpleRestfulDescriptorViewModel>(ServiceDescriptor);
+            object originDescriptor = DeserializeServiceDescriptor();
             var originCurrent = JsonConvert.DeserializeObject<JsonTemplate>(CurrentJson);
             switch (CurrentName)
             {
-                case JsonTemplateNames.Parameter:
+                case JsonTemplateNames.RESTParameter:
                     if (string.IsNullOrWhiteSpace(CurrentPath))
                     {
-                        originDescriptor.JsonBodyTemplate = originCurrent;
+                        ((SimpleRestfulDescriptorViewModel)originDescriptor).JsonBodyTemplate = originCurrent;
                     }
                     else
                     {
-                        originDescriptor.JsonBodyTemplate.ReplaceWith(CurrentPath, originCurrent);
+                        ((SimpleRestfulDescriptorViewModel)originDescriptor).JsonBodyTemplate.ReplaceWith(CurrentPath, originCurrent);
                     }
                     break;
-                case JsonTemplateNames.ReturnValue:
+                case JsonTemplateNames.RESTReturnValue:
                     if (string.IsNullOrWhiteSpace(CurrentPath))
                     {
-                        originDescriptor.ReturnJsonTemplate = originCurrent;
+                        ((SimpleRestfulDescriptorViewModel)originDescriptor).ReturnJsonTemplate = originCurrent;
                     }
                     else
                     {
-                        originDescriptor.ReturnJsonTemplate.ReplaceWith(CurrentPath, originCurrent);
+                        ((SimpleRestfulDescriptorViewModel)originDescriptor).ReturnJsonTemplate.ReplaceWith(CurrentPath, originCurrent);
+                    }
+                    break;
+                case JsonTemplateNames.NCParameter:
+                    if (string.IsNullOrWhiteSpace(CurrentPath))
+                    {
+                        ((NCDescriptorViewModel)originDescriptor).ParameterBody = originCurrent;
+                    }
+                    else
+                    {
+                        ((NCDescriptorViewModel)originDescriptor).ParameterBody.ReplaceWith(CurrentPath, originCurrent);
+                    }
+                    break;
+                case JsonTemplateNames.NCReturn:
+                    if (string.IsNullOrWhiteSpace(CurrentPath))
+                    {
+                        ((NCDescriptorViewModel)originDescriptor).ReturnBody = originCurrent;
+                    }
+                    else
+                    {
+                        ((NCDescriptorViewModel)originDescriptor).ReturnBody.ReplaceWith(CurrentPath, originCurrent);
                     }
                     break;
                 default:
@@ -129,9 +188,20 @@ namespace cnf.esb.web.Models
             ServiceDescriptor = JsonConvert.SerializeObject(originDescriptor);
         }
 
-        public static EditServiceJson CreateFrom(EsbService service, JsonTemplateNames editName)
+        public static EditServiceJson CreateFrom(EsbService service, JsonTemplateNames partName)
         {
-            return EditServiceJson.CreateFrom(SimpleRestfulDescriptorViewModel.CreateFrom(service), editName);
+            if(service.Type == ServiceType.SimpleRESTful)
+            {
+                return EditServiceJson.CreateFrom(SimpleRestfulDescriptorViewModel.CreateFrom(service), partName);
+            }
+            else if(service.Type == ServiceType.NCWebService)
+            {
+                return EditServiceJson.CreateFrom(NCDescriptorViewModel.CreateFrom(service), partName);
+            }
+            else
+            {
+                throw new Exception("not impleted service type");
+            }
         }
 
         public static EditServiceJson CreateFrom(EditServiceJsonViewModel model)
@@ -146,24 +216,47 @@ namespace cnf.esb.web.Models
             return serviceJson;
         }
 
-        public static EditServiceJson CreateFrom(SimpleRestfulDescriptorViewModel model, JsonTemplateNames editName)
+        public static EditServiceJson CreateFrom(SimpleRestfulDescriptorViewModel model, JsonTemplateNames partName)
         {
             var serviceJson = new EditServiceJson
             {
                 ServiceDescriptor = JsonConvert.SerializeObject(model),
                 CurrentPath = "",
-                CurrentName = editName
+                CurrentName = partName
             };
-            switch (editName)
+            switch (partName)
             {
-                case JsonTemplateNames.Parameter:
+                case JsonTemplateNames.RESTParameter:
                     serviceJson.CurrentJson = JsonConvert.SerializeObject(model.JsonBodyTemplate);
                     break;
-                case JsonTemplateNames.ReturnValue:
+                case JsonTemplateNames.RESTReturnValue:
                     serviceJson.CurrentJson = JsonConvert.SerializeObject(model.ReturnJsonTemplate);
                     break;
                 default:
-                    throw new Exception("没有实现该部分的JSON模板");
+                    throw new Exception("传入了非RESTful服务类型的部位参数"+ partName.ToString());
+            }
+            
+            return serviceJson;
+        }
+
+        public static EditServiceJson CreateFrom(NCDescriptorViewModel model, JsonTemplateNames partName)
+        {
+            var serviceJson = new EditServiceJson
+            {
+                ServiceDescriptor = JsonConvert.SerializeObject(model),
+                CurrentPath = "",
+                CurrentName = partName
+            };
+            switch (partName)
+            {
+                case JsonTemplateNames.NCParameter:
+                    serviceJson.CurrentJson = JsonConvert.SerializeObject(model.ParameterBody);
+                    break;
+                case JsonTemplateNames.NCReturn:
+                    serviceJson.CurrentJson = JsonConvert.SerializeObject(model.ReturnBody);
+                    break;
+                default:
+                    throw new Exception("传入了非NC系统Web服务类型的部位参数"+ partName.ToString());
             }
             
             return serviceJson;

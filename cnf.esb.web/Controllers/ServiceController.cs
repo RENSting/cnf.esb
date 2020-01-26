@@ -16,8 +16,10 @@ namespace cnf.esb.web.Controllers
         public const string STATE_ADD_HEADER_ERROR = "AddHeaderError";
         public const string STATE_NEW_HEADER_KEY = "NewHeaderKey";
         public const string STATE_NEW_HEADER_VALUE = "NewHeaderValue";
-        public const string STATE_JSON_TEMPLATE_ERROR = "JsonTemplateError";
-        public const string STATE_RETURN_JSON_ERROR = "ReturnJsonError";
+        public const string STATE_RESTJSON_ERROR = "JsonTemplateError";
+        public const string STATE_RESTRETURN_ERROR = "ReturnJsonError";
+        public const string STATE_NCPARAMETER_ERROR = "NCParameterError";
+        public const string STATE_NCRETURN_ERROR = "NCReturnError";
         public const string EDIT_JSON_CROSS_ACTION_DATA_KEY = "CrossActionJson";
         public const string EDIT_SERVICE_CROSS_ACTION_DATA_KEY = "CrossActionService";
 
@@ -27,6 +29,9 @@ namespace cnf.esb.web.Controllers
         {
             _esbModelContext = esbModelContext;
         }
+
+        #region Service base information management
+
         public async Task<IActionResult> Index()
         {
             var services = from s in _esbModelContext.Services
@@ -99,6 +104,30 @@ namespace cnf.esb.web.Controllers
             }
         }
 
+        #endregion
+
+        #region According service type, configure methods here
+
+        T RestoreAndUpdateService<T>(T uiViewModel, string savedViewModelJson)
+            where T : IServiceDescriptorViewModel
+        {
+            IServiceDescriptorViewModel savedViewModel;
+            if(uiViewModel.ServiceType == ServiceType.NCWebService)
+            {
+                savedViewModel = JsonConvert.DeserializeObject<NCDescriptorViewModel>(savedViewModelJson);
+            }
+            else if(uiViewModel.ServiceType == ServiceType.SimpleRESTful)
+            {
+                savedViewModel = JsonConvert.DeserializeObject<SimpleRestfulDescriptorViewModel>(savedViewModelJson);
+            }
+            else
+            {
+                throw new Exception("not implemented");
+            }
+            savedViewModel.UpdateFromUI(uiViewModel);
+            return (T)savedViewModel;
+        }
+
         public IActionResult EditSimpleRestfulService()
         {
             if (TempData[EDIT_SERVICE_CROSS_ACTION_DATA_KEY] == null)
@@ -116,13 +145,32 @@ namespace cnf.esb.web.Controllers
                 viewModel.NewHeaderValue = "";
             }
 
-            if (TempData.ContainsKey(STATE_JSON_TEMPLATE_ERROR))
+            if (TempData.ContainsKey(STATE_RESTJSON_ERROR))
             {
-                ViewData[STATE_JSON_TEMPLATE_ERROR] = TempData[STATE_JSON_TEMPLATE_ERROR];
+                ViewData[STATE_RESTJSON_ERROR] = TempData[STATE_RESTJSON_ERROR];
             }
-            if (TempData.ContainsKey(STATE_RETURN_JSON_ERROR))
+            if (TempData.ContainsKey(STATE_RESTRETURN_ERROR))
             {
-                ViewData[STATE_RETURN_JSON_ERROR] = TempData[STATE_RETURN_JSON_ERROR];
+                ViewData[STATE_RESTRETURN_ERROR] = TempData[STATE_RESTRETURN_ERROR];
+            }
+            return View(viewModel);
+        }
+
+        public IActionResult EditNCWebService()
+        {
+            if (TempData[EDIT_SERVICE_CROSS_ACTION_DATA_KEY] == null)
+            {
+                throw new Exception("页面只能被内部访问，无法直接调用");
+            }
+            var viewModel = TempData.Get<NCDescriptorViewModel>(EDIT_SERVICE_CROSS_ACTION_DATA_KEY);
+
+            if (TempData.ContainsKey(STATE_NCPARAMETER_ERROR))
+            {
+                ViewData[STATE_NCPARAMETER_ERROR] = TempData[STATE_NCPARAMETER_ERROR];
+            }
+            if (TempData.ContainsKey(STATE_NCRETURN_ERROR))
+            {
+                ViewData[STATE_NCRETURN_ERROR] = TempData[STATE_NCRETURN_ERROR];
             }
             return View(viewModel);
         }
@@ -159,20 +207,97 @@ namespace cnf.esb.web.Controllers
                 TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, viewModel);
                 return RedirectToAction(nameof(EditSimpleRestfulService));
             }
+            else if (service.Type == ServiceType.NCWebService)
+            {
+                var viewModel = NCDescriptorViewModel.CreateFrom(service);
+                TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, viewModel);
+                return RedirectToAction(nameof(EditNCWebService));
+            }
             else
             {
                 throw new Exception($"Not yet impletement API of type:{service.Type.ToString()}");
             }
         }
 
-        SimpleRestfulDescriptorViewModel RestoreAndUpdateService(
-            SimpleRestfulDescriptorViewModel uiViewModel, string savedViewModelJson)
+        async Task<IActionResult> SaveServiceAction(IServiceDescriptorViewModel viewModel, string serviceJson)
         {
-            var savedViewModel = JsonConvert.DeserializeObject<SimpleRestfulDescriptorViewModel>(savedViewModelJson);
-            savedViewModel.UpdateFromUI(uiViewModel);
-            return savedViewModel;
+            IServiceDescriptorViewModel originalViewModel = RestoreAndUpdateService(viewModel, serviceJson);
+            var service = await _esbModelContext.Services.FindAsync(originalViewModel.ServiceID);
+            if (service == null)
+            {
+                throw new Exception($"视图包含的服务协定所对应的服务本身[ServiceID={originalViewModel.ServiceID}]已经在数据库中不存在");
+            }
+            if (originalViewModel.UpdateToService(ref service, out var error) == false)
+            {
+                string serviceViewName;
+                if (originalViewModel.ServiceType == ServiceType.SimpleRESTful)
+                {
+                    TempData[STATE_RESTRETURN_ERROR] = error;
+                    serviceViewName = nameof(EditSimpleRestfulService);
+                }
+                else if (originalViewModel.ServiceType == ServiceType.NCWebService)
+                {
+                    TempData[STATE_NCRETURN_ERROR] = error;
+                    serviceViewName = nameof(EditNCWebService);
+                }
+                else
+                {
+                    throw new Exception("not implemented");
+                }
+                TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, originalViewModel);
+                return RedirectToAction(serviceViewName);
+            }
+            _esbModelContext.Update(service);
+            await _esbModelContext.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
         }
 
+        #endregion
+
+        #region NC service definition
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EditNCParameter(NCDescriptorViewModel viewModel, string serviceJson)
+        {
+            return EditJsonAction(JsonTemplateNames.NCParameter, viewModel, serviceJson);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteNCParameter(NCDescriptorViewModel viewModel, string serviceJson)
+        {
+            return DeleteJsonAction(JsonTemplateNames.NCParameter, viewModel, serviceJson);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EditNCReturn(NCDescriptorViewModel viewModel, string serviceJson)
+        {
+            return EditJsonAction(JsonTemplateNames.NCReturn, viewModel, serviceJson);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteNCReturn(NCDescriptorViewModel viewModel, string serviceJson)
+        {
+            return DeleteJsonAction(JsonTemplateNames.NCReturn, viewModel, serviceJson);
+        }
+
+        // REST: save the service
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveNCWebService(NCDescriptorViewModel viewModel, string serviceJson)
+        {
+            return await SaveServiceAction(viewModel, serviceJson);
+        }
+
+        #endregion
+
+        #region RESTful service definition
+
+        // REST: Add request header
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult AddHeader(SimpleRestfulDescriptorViewModel viewModel, string serviceJson)
@@ -208,6 +333,7 @@ namespace cnf.esb.web.Controllers
             return RedirectToAction(nameof(EditSimpleRestfulService));
         }
 
+        // REST: Remove request header
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult RemoveHeader(SimpleRestfulDescriptorViewModel viewModel,
@@ -219,6 +345,7 @@ namespace cnf.esb.web.Controllers
             return RedirectToAction(nameof(EditSimpleRestfulService));
         }
 
+        // REST: create json body
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult CreateJson(SimpleRestfulDescriptorViewModel viewModel, string serviceJson)
@@ -234,20 +361,15 @@ namespace cnf.esb.web.Controllers
             return RedirectToAction(nameof(EditSimpleRestfulService));
         }
 
+        // REST： delete json body
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult DeleteJson(SimpleRestfulDescriptorViewModel viewModel, string serviceJson)
         {
-            var originalViewModel = RestoreAndUpdateService(viewModel, serviceJson);
-            if (originalViewModel.JsonBodyTemplate != null)
-            {
-                originalViewModel.JsonBodyTemplate = null;
-            }
-            originalViewModel.SelectedTab = "nav-json";
-            TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, originalViewModel);
-            return RedirectToAction(nameof(EditSimpleRestfulService));
+            return DeleteJsonAction(JsonTemplateNames.RESTParameter, viewModel, serviceJson);
         }
 
+        // REST: edit json body
         /// <summary>
         /// 编辑API输入参数JSON模板
         /// </summary>
@@ -256,86 +378,167 @@ namespace cnf.esb.web.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult EditJson(SimpleRestfulDescriptorViewModel viewModel, string serviceJson)
         {
-            var originalViewModel = RestoreAndUpdateService(viewModel, serviceJson);
-            try
-            {
-                if (originalViewModel.JsonBodyTemplate == null)
-                {
-                    throw new Exception("尚未定义JSON模板，请首先创建后再编辑它。");
-                }
-                else
-                {
-                    var postedJson = Models.EditServiceJson.CreateFrom(originalViewModel, JsonTemplateNames.Parameter);
-                    TempData.Put(EDIT_JSON_CROSS_ACTION_DATA_KEY, postedJson);
-                    return RedirectToAction(nameof(EditServiceJson));
-                }
-            }
-            catch (Exception ex)
-            {
-                TempData[STATE_JSON_TEMPLATE_ERROR] = ex.Message;
-                originalViewModel.SelectedTab = "nav-json";
-                TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, originalViewModel);
-                return RedirectToAction(nameof(EditSimpleRestfulService));
-            }
+            return EditJsonAction(JsonTemplateNames.RESTParameter, viewModel, serviceJson);
         }
 
+        // REST: edit return json 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult EditReturnJson(SimpleRestfulDescriptorViewModel viewModel, string serviceJson)
         {
-            var originalViewModel = RestoreAndUpdateService(viewModel, serviceJson);
-            try
-            {
-                if (originalViewModel.ReturnJsonTemplate == null)
-                {
-                    originalViewModel.ReturnJsonTemplate = new JsonTemplate();
-                    originalViewModel.ReturnJsonTemplate.ValueType = Models.ValueType.Integer;
-                }
-                var postedJson = Models.EditServiceJson.CreateFrom(originalViewModel, JsonTemplateNames.ReturnValue);
-                TempData.Put(EDIT_JSON_CROSS_ACTION_DATA_KEY, postedJson);
-                return RedirectToAction(nameof(EditServiceJson));
-            }
-            catch (Exception ex)
-            {
-                TempData[STATE_JSON_TEMPLATE_ERROR] = ex.Message;
-                TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, originalViewModel);
-                return RedirectToAction(nameof(EditSimpleRestfulService));
-            }
+            return EditJsonAction(JsonTemplateNames.RESTReturnValue, viewModel, serviceJson);
         }
 
+        // REST： delete return json
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult DeleteReturnJson(SimpleRestfulDescriptorViewModel viewModel, string serviceJson)
         {
-            var originalViewModel = RestoreAndUpdateService(viewModel, serviceJson);
-            if (originalViewModel.ReturnJsonTemplate != null)
-            {
-                originalViewModel.ReturnJsonTemplate = null;
-            }
-            TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, originalViewModel);
-            return RedirectToAction(nameof(EditSimpleRestfulService));
+            return DeleteJsonAction(JsonTemplateNames.RESTReturnValue, viewModel, serviceJson);
         }
 
+        // REST: save the service
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveSimpleRestfulService(
             SimpleRestfulDescriptorViewModel viewModel, string serviceJson)
         {
-            var originalViewModel = RestoreAndUpdateService(viewModel, serviceJson);
-            var service = await _esbModelContext.Services.FindAsync(originalViewModel.ServiceID);
-            if (service == null)
+            return await SaveServiceAction(viewModel, serviceJson);
+        }
+
+        #endregion
+
+        #region EDIT JSON TEMPLATE
+
+        ServiceType GetServiceType(JsonTemplateNames partName)
+        {
+            switch (partName)
             {
-                throw new Exception($"视图包含的服务协定所对应的服务本身[ServiceID={originalViewModel.ServiceID}]已经在数据库中不存在");
+                case JsonTemplateNames.RESTParameter:
+                case JsonTemplateNames.RESTReturnValue:
+                    return ServiceType.SimpleRESTful;
+                case JsonTemplateNames.NCParameter:
+                case JsonTemplateNames.NCReturn:
+                    return ServiceType.NCWebService;
+                default:
+                    throw new Exception("not impleted json part.");
             }
-            if(originalViewModel.UpdateToService(ref service, out var error) == false)
+        }
+
+        IActionResult DeleteJsonAction(JsonTemplateNames partName, IServiceDescriptorViewModel viewModel, string serviceJson)
+        {
+            IServiceDescriptorViewModel originalViewModel = RestoreAndUpdateService(viewModel, serviceJson);
+            string serviceViewName;
+            if (originalViewModel.ServiceType == ServiceType.NCWebService)
             {
-                TempData[STATE_RETURN_JSON_ERROR] = error;
-                TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, originalViewModel);
-                return RedirectToAction(nameof(EditSimpleRestfulService));
+                serviceViewName = nameof(EditNCWebService);
             }
-            _esbModelContext.Update(service);
-            await _esbModelContext.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            else if (originalViewModel.ServiceType == ServiceType.SimpleRESTful)
+            {
+                serviceViewName = nameof(EditSimpleRestfulService);
+            }
+            else
+            {
+                throw new Exception("not implemented");
+            }
+            if (partName == JsonTemplateNames.NCParameter)
+            {
+                ((NCDescriptorViewModel)originalViewModel).ParameterBody = null;
+            }
+            else if (partName == JsonTemplateNames.NCReturn)
+            {
+                ((NCDescriptorViewModel)originalViewModel).ReturnBody = null;
+            }
+            else if (partName == JsonTemplateNames.RESTParameter)
+            {
+                ((SimpleRestfulDescriptorViewModel)originalViewModel).JsonBodyTemplate = null;
+                ((SimpleRestfulDescriptorViewModel)originalViewModel).SelectedTab = "nav-json";
+            }
+            else if (partName == JsonTemplateNames.RESTReturnValue)
+            {
+                ((SimpleRestfulDescriptorViewModel)originalViewModel).ReturnJsonTemplate = null;
+            }
+            TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, originalViewModel);
+            return RedirectToAction(serviceViewName);
+        }
+
+        IActionResult EditJsonAction(JsonTemplateNames partName, IServiceDescriptorViewModel viewModel, string serviceJson)
+        {
+            IServiceDescriptorViewModel originalViewModel = RestoreAndUpdateService(viewModel, serviceJson);
+            //string errorKey = "";
+            if (partName == JsonTemplateNames.NCParameter)
+            {
+                //errorKey = STATE_NCPARAMETER_ERROR;
+                if (((NCDescriptorViewModel)originalViewModel).ParameterBody == null)
+                {
+                    ((NCDescriptorViewModel)originalViewModel).ParameterBody = new JsonTemplate();
+                    ((NCDescriptorViewModel)originalViewModel).ParameterBody.ValueType = Models.ValueType.Object;
+                }
+            }
+            else if (partName == JsonTemplateNames.NCReturn)
+            {
+                //errorKey = STATE_NCRETURN_ERROR;
+                if (((NCDescriptorViewModel)originalViewModel).ReturnBody == null)
+                {
+                    ((NCDescriptorViewModel)originalViewModel).ReturnBody = new JsonTemplate();
+                    ((NCDescriptorViewModel)originalViewModel).ReturnBody.ValueType = Models.ValueType.Object;
+                }
+            }
+            else if (partName == JsonTemplateNames.RESTParameter)
+            {
+                //errorKey = STATE_RESTJSON_ERROR;
+                if (((SimpleRestfulDescriptorViewModel)originalViewModel).JsonBodyTemplate == null)
+                {
+                    ((SimpleRestfulDescriptorViewModel)originalViewModel).JsonBodyTemplate = new JsonTemplate();
+                    ((SimpleRestfulDescriptorViewModel)originalViewModel).JsonBodyTemplate.ValueType = Models.ValueType.Integer;
+                }
+            }
+            else if (partName == JsonTemplateNames.RESTReturnValue)
+            {
+                //errorKey = STATE_RESTRETURN_ERROR;
+                if (((SimpleRestfulDescriptorViewModel)originalViewModel).ReturnJsonTemplate == null)
+                {
+                    ((SimpleRestfulDescriptorViewModel)originalViewModel).ReturnJsonTemplate = new JsonTemplate();
+                    ((SimpleRestfulDescriptorViewModel)originalViewModel).ReturnJsonTemplate.ValueType = Models.ValueType.Integer;
+                }
+            }
+            EditServiceJson postedJson;
+            if (originalViewModel.ServiceType == ServiceType.NCWebService)
+            {
+                postedJson = Models.EditServiceJson.CreateFrom((NCDescriptorViewModel)originalViewModel, partName);
+            }
+            else if (originalViewModel.ServiceType == ServiceType.SimpleRESTful)
+            {
+                postedJson = Models.EditServiceJson.CreateFrom((SimpleRestfulDescriptorViewModel)originalViewModel, partName);
+            }
+            else
+            {
+                throw new Exception("not implemented");
+            }
+            TempData.Put(EDIT_JSON_CROSS_ACTION_DATA_KEY, postedJson);
+            return RedirectToAction(nameof(EditServiceJson));
+
+            // Exception Catch Block (old)
+            // TempData[errorKey] = ex.Message;
+            // TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, originalViewModel);
+            // if(partName == JsonTemplateNames.RESTParameter)
+            // {
+            //     ((SimpleRestfulDescriptorViewModel)originalViewModel).SelectedTab = "nav-json";
+            // }
+            // string serviceViewName;
+            // if(originalViewModel.ServiceType == ServiceType.NCWebService)
+            // {
+            //     serviceViewName = nameof(EditNCWebService);
+            // }
+            // else if(originalViewModel.ServiceType == ServiceType.SimpleRESTful)
+            // {
+            //     serviceViewName = nameof(EditSimpleRestfulService);
+            // }
+            // else
+            // {
+            //     throw new Exception("not implemented");
+            // }
+            // return RedirectToAction(serviceViewName);
         }
 
         public IActionResult EditServiceJson()
@@ -495,35 +698,62 @@ namespace cnf.esb.web.Controllers
             crossActionData.UpdateWholeJson();
             if (!string.IsNullOrWhiteSpace(crossActionData.CurrentPath))
             {
+                object wholeDescriptor = crossActionData.DeserializeServiceDescriptor();
                 int lastIndexOfDot = crossActionData.CurrentPath.LastIndexOf('.');
-                var wholeDescriptor = JsonConvert.DeserializeObject<SimpleRestfulDescriptorViewModel>(
-                    crossActionData.ServiceDescriptor);
                 if (lastIndexOfDot < 0)
                 {
+                    //返回到了根
                     crossActionData.CurrentPath = string.Empty;
-                    if (crossActionData.CurrentName == Models.JsonTemplateNames.Parameter)
+                    switch (crossActionData.CurrentName)
                     {
-                        crossActionData.CurrentJson = JsonConvert.SerializeObject(wholeDescriptor.JsonBodyTemplate);
-                    }
-                    else if (crossActionData.CurrentName == Models.JsonTemplateNames.ReturnValue)
-                    {
-                        crossActionData.CurrentJson = JsonConvert.SerializeObject(wholeDescriptor.ReturnJsonTemplate);
+                        case JsonTemplateNames.RESTParameter:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((SimpleRestfulDescriptorViewModel)wholeDescriptor).JsonBodyTemplate);
+                            break;
+                        case JsonTemplateNames.RESTReturnValue:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((SimpleRestfulDescriptorViewModel)wholeDescriptor).ReturnJsonTemplate);
+                            break;
+                        case JsonTemplateNames.NCParameter:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((NCDescriptorViewModel)wholeDescriptor).ParameterBody);
+                            break;
+                        case JsonTemplateNames.NCReturn:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((NCDescriptorViewModel)wholeDescriptor).ReturnBody);
+                            break;
+                        default:
+                            throw new Exception("not implemented json part for this service");
                     }
                 }
                 else
                 {
+                    //返回到上一级
                     crossActionData.CurrentPath = crossActionData.CurrentPath.Substring(0, lastIndexOfDot);
-                    if (crossActionData.CurrentName == Models.JsonTemplateNames.Parameter)
+                    switch (crossActionData.CurrentName)
                     {
-                        crossActionData.CurrentJson = JsonConvert.SerializeObject(
-                            wholeDescriptor.JsonBodyTemplate.FindTemplate(crossActionData.CurrentPath));
-
-                    }
-                    else if (crossActionData.CurrentName == Models.JsonTemplateNames.ReturnValue)
-                    {
-                        crossActionData.CurrentJson = JsonConvert.SerializeObject(
-                            wholeDescriptor.ReturnJsonTemplate.FindTemplate(crossActionData.CurrentPath));
-
+                        case JsonTemplateNames.RESTParameter:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((SimpleRestfulDescriptorViewModel)wholeDescriptor)
+                                .JsonBodyTemplate.FindTemplate(crossActionData.CurrentPath));
+                            break;
+                        case JsonTemplateNames.RESTReturnValue:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((SimpleRestfulDescriptorViewModel)wholeDescriptor)
+                                .ReturnJsonTemplate.FindTemplate(crossActionData.CurrentPath));
+                            break;
+                        case JsonTemplateNames.NCParameter:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((NCDescriptorViewModel)wholeDescriptor)
+                                .ParameterBody.FindTemplate(crossActionData.CurrentPath));
+                            break;
+                        case JsonTemplateNames.NCReturn:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((NCDescriptorViewModel)wholeDescriptor)
+                                .ReturnBody.FindTemplate(crossActionData.CurrentPath));
+                            break;
+                        default:
+                            throw new Exception("not implemented json part for this service");
                     }
                 }
             }
@@ -538,12 +768,24 @@ namespace cnf.esb.web.Controllers
             var crossActionData = Models.EditServiceJson.CreateFrom(viewModel);
             ProcessBeforeJump(ref crossActionData, ref viewModel);
             crossActionData.UpdateWholeJson();
-            var serviceDescriptor = JsonConvert.DeserializeObject<SimpleRestfulDescriptorViewModel>(
-                crossActionData.ServiceDescriptor);
-
-            serviceDescriptor.SelectedTab = "nav-json";
-            TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, serviceDescriptor);
-            return RedirectToAction(nameof(EditSimpleRestfulService));
+            object serviceDescriptor = crossActionData.DeserializeServiceDescriptor();
+            if (crossActionData.ServiceType == ServiceType.SimpleRESTful)
+            {
+                ((SimpleRestfulDescriptorViewModel)serviceDescriptor).SelectedTab = "nav-json";
+                TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, serviceDescriptor);
+                return RedirectToAction(nameof(EditSimpleRestfulService));
+            }
+            else if (crossActionData.ServiceType == ServiceType.NCWebService)
+            {
+                TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, serviceDescriptor);
+                return RedirectToAction(nameof(EditNCWebService));
+            }
+            else
+            {
+                throw new Exception("not implemented service type");
+            }
         }
+
+        #endregion
     }
 }

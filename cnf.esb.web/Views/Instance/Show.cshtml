@@ -7,7 +7,8 @@
 
 <div class="page-header">
     <h5>
-        @Html.DisplayTextFor(m=>m.Name)
+        Instance ID   : @Html.DisplayFor(m=>m.ID)  <br>
+        Instance Name : @Html.DisplayTextFor(m=>m.Name)
         @if(Model.ActiveStatus == 0)
         {
             <span class="badge badge-secondary">已停用</span>

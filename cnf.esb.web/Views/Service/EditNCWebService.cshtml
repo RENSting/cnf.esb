@@ -1,0 +1,123 @@
+@model cnf.esb.web.Models.NCDescriptorViewModel
+
+@{
+    ViewData["Title"]="NC-API";
+    ViewBag.ServiceJson = Newtonsoft.Json.JsonConvert.SerializeObject(Model);
+}
+
+<div class="page-header">
+    <h4>用友NC系统Web服务定义</h4>
+    <p class="text-muted small">
+        用友NC系统使用特定的Web Service格式，它要求一个的JSON作为输入参数，并在执行完成后返回一个JSON。
+        ESB封装了用友NC的SOAP1.1包，客户程序仅需要按照此处定义的JSON发送参数，并且按照此处定义的JSON处理返回值即可。
+    </p>
+</div>
+<form role="form" method="post">
+    <input type="hidden" name="ServiceJson" id="ServiceJson" value="@ViewBag.ServiceJson"/>        
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="card">
+        <div class="card-body p-2">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="form-group my-0">
+                        <label asp-for="ServiceName" class="col-form-label col-form-label-sm"></label>
+                        <input asp-for="ServiceName" class="form-control form-control-sm" placeholder="请输入NC服务名称">
+                        <span asp-validation-for="ServiceName" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input asp-for="ActiveStatus" class="form-check-input" /> 
+                        <label class="form-check-label" asp-for="ActiveStatus"></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card mt-2">
+        <div class="card-body p-2">
+            <div class="row">
+                <div class="form-group col-md-8 my-0">
+                    <label asp-for="WebServiceUrl" class="col-form-label col-form-label-sm"></label>
+                    <input class="form-control form-control-sm" placeholder="请输入NC服务的URL，可以不包括方法名"
+                        asp-for="WebServiceUrl">
+                    <span asp-validation-for="WebServiceUrl" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-4 my-0">
+                    <label asp-for="EndPoint" class="col-form-label col-form-label-sm"></label>
+                    <input class="form-control form-control-sm" placeholder="API端点就是方法名，必须输入"
+                        asp-for="EndPoint">
+                    <span asp-validation-for="EndPoint" class="text-danger"></span>
+                </div>
+            </div>
+            <p class="text-muted small mb-0">
+                Web服务基地址（URL）是用友提供的API调用路径，这是一个标准的SOAP1.1服务定义。
+                如果在URL的最后提供方法名，那么该方法名也就是End Point（API端点）的名称。
+            </p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mt-2">
+                <div class="card-header">
+                    <h6>向服务发送的参数JSON</h6>
+                </div>
+                <div class="card-body">
+                    @if(!string.IsNullOrWhiteSpace(ViewData["NCParameterError"]?.ToString()))
+                    {
+                        <div class="alert alert-danger">
+                            @ViewData["NCParameterError"]
+                        </div>
+                    }
+                    @if(Model.ParameterBody != null){@Html.DisplayFor(m=>m.ParameterBody)}
+                    <div class="mt-2">
+                        <button asp-action="EditNCParameter" 
+                            class="btn btn-sm btn-info ml-2">编辑JSON模板</button>
+                    @if(Model.ParameterBody != null)
+                    {
+                        <button asp-action="DeleteNCParameter" 
+                            class="btn btn-sm btn-danger ml-2"
+                            onclick="if(confirm('删除json模板定义是不可恢复的，请问确定要删除此模板吗？')==false)return false;">删除JSON模板</button>
+                    }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mt-2">
+                <div class="card-header">
+                    <h6>服务返回值JSON</h6>
+                </div>
+                <div class="card-body">
+                    @if(!string.IsNullOrWhiteSpace(ViewData["NCReturnError"]?.ToString()))
+                    {
+                        <div class="alert alert-danger">
+                            @ViewData["NCReturnError"]
+                        </div>
+                    }
+                    @if(Model.ReturnBody != null){@Html.DisplayFor(m=>m.ReturnBody)}
+                    <div class="mt-2">
+                        <button asp-action="EditNCReturn"
+                            class="btn btn-sm btn-info ml-2">编辑JSON模板</button>
+                    @if(Model.ReturnBody != null)
+                    {
+                        <button asp-action="DeleteNCReturn" 
+                            class="btn btn-sm btn-danger ml-2"
+                            onclick="if(confirm('删除json模板定义是不可恢复的，请问确定要删除此模板吗？')==false)return false;">删除JSON模板</button>
+                    }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-2">
+        <button class="btn btn-primary btn-lg" asp-action="SaveNCWebService">保存并返回</button>
+        <a asp-action="Index" 
+            onclick="if(confirm('直接返回列表将丢弃本次管理活动尚未保存的全部修改，确实要返回吗？')==false)return false;" 
+            class="btn btn-default">返回注册服务列表</a>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

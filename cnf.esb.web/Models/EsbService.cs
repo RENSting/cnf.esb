@@ -1,83 +1,119 @@
 using System;
+using System.Net;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace cnf.esb.web.Models
 {
+    /// <summary>
+    /// 客户程序调用ESB服务时，发送的body中json成员名称
+    /// </summary>
+    public static class EsbPostBodySections
+    {
+        public const string ROUTE = "route";
+        public const string QUERY = "query";
+        public const string FORM = "form";
+        public const string JSON = "json";
+    }
+
+    public interface IServiceDescriptorViewModel
+    {
+        int ServiceID { get; set; }
+        string ServiceName { get; set; }
+        bool ActiveStatus { get; set; }
+        ServiceType ServiceType { get; }
+        bool IsDefined { get; }
+        bool UpdateToService(ref EsbService service, out string error);
+        void UpdateFromUI(IServiceDescriptorViewModel uiViewModel);
+        /// <summary>
+        /// get a json body sample of this type of service
+        /// </summary>
+        /// <returns></returns>
+        string GetPostSample();
+        string GetReturnSample();
+        WebRequest GetWebRequest(JObject source);
+
+        bool CheckResponse(string rawResponse, out string apiResponse);
+    }
+
     public enum ServiceType
     {
-        [Display(Name="简单RESTful")]
-        SimpleRESTful
+        [Display(Name = "简单RESTful")]
+        SimpleRESTful,
+        [Display(Name = "用友NC系统Web服务")]
+        NCWebService,
     }
 
     [Table("EsbService")]
     public class EsbService
     {
-        [Display(Name="ID")]
-        public int ID{get;set;}
+        [Display(Name = "ID")]
+        public int ID { get; set; }
 
         [Required, MaxLength(50)]
-        [Display(Name="服务名称")]
-        public string Name{get;set;}
+        [Display(Name = "服务名称")]
+        public string Name { get; set; }
 
-        [Display(Name="分组")]
-        public string GroupName{get;set;}
+        [Display(Name = "分组")]
+        public string GroupName { get; set; }
 
-        [Display(Name="服务说明")]
-        public string FullDescription{get;set;}
+        [Display(Name = "服务说明")]
+        public string FullDescription { get; set; }
 
         /// <summary>
         /// 接口类型决定了服务协定的格式
         /// </summary>
         /// <value></value>
-        [Required, Display(Name="接口类型")]
-        public ServiceType Type{get;set;}
+        [Required, Display(Name = "接口类型")]
+        public ServiceType Type { get; set; }
 
         /// <summary>
         /// JSON序列化的API接口协议，包括URI， 输入参数， 返回值等
         /// </summary>
         /// <value></value>
-        [Display(Name="服务协定")]
-        public string ServiceDescriptor{get;set;}
+        [Display(Name = "服务协定")]
+        public string ServiceDescriptor { get; set; }
 
-        [Display(Name="创建日期")]
+        [Display(Name = "创建日期")]
         [DataType(DataType.Date)]
-        public DateTime CreatedOn{get;set;}
+        public DateTime CreatedOn { get; set; }
 
-        [Display(Name="服务状态")]
-        public int ActiveStatus{get;set;}
+        [Display(Name = "服务状态")]
+        public int ActiveStatus { get; set; }
 
-        public ICollection<EsbInstance> Instances{get;set;}
+        public ICollection<EsbInstance> Instances { get; set; }
     }
 
     public class EditServiceViewModel
     {
-        public int ServiceID{get;set;}
+        public int ServiceID { get; set; }
 
         [Required, MaxLength(50)]
-        [Display(Name="服务名称")]
-        public string Name{get;set;}
+        [Display(Name = "服务名称")]
+        public string Name { get; set; }
 
-        [Display(Name="分组")]
-        public string GroupName{get;set;}
+        [Display(Name = "分组")]
+        public string GroupName { get; set; }
 
-        [Display(Name="服务说明")]
-        public string FullDescription{get;set;}
+        [Display(Name = "服务说明")]
+        public string FullDescription { get; set; }
 
         /// <summary>
         /// 接口类型决定了服务协定的格式
         /// </summary>
         /// <value></value>
-        [Required, Display(Name="接口类型")]
-        public ServiceType Type{get;set;}
+        [Required, Display(Name = "接口类型")]
+        public ServiceType Type { get; set; }
 
-        [Display(Name="服务状态")]
-        public bool ActiveStatus{get;set;}
+        [Display(Name = "服务状态")]
+        public bool ActiveStatus { get; set; }
 
         public static implicit operator EditServiceViewModel(EsbService service)
         {
-            return new EditServiceViewModel{
+            return new EditServiceViewModel
+            {
                 ActiveStatus = service.ActiveStatus != 0,
                 FullDescription = service.FullDescription,
                 GroupName = service.GroupName,
@@ -92,4 +128,15 @@ namespace cnf.esb.web.Models
     {
         GET, POST
     }
+
+    /// <summary>
+    /// response out
+    /// </summary>
+    public class ResponseBody
+    {
+        public int ReturnCode { get; set; }
+        public string ErrorMessage { get; set; }
+        public string Response { get; set; }
+    }
+
 }

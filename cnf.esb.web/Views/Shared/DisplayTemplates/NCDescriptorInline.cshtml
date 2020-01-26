@@ -1,0 +1,30 @@
+@model cnf.esb.web.Models.NCDescriptorViewModel
+
+@if(Model == null || !Model.IsDefined)
+{
+    <span class="badge badge-warning">
+        尚未定义
+    </span>
+}
+else
+{
+    if(!string.IsNullOrWhiteSpace(Model.WebServiceUrl))
+    {
+        var fullUrl = (Model.WebServiceUrl.EndsWith(Model.EndPoint, StringComparison.OrdinalIgnoreCase))
+                ? Model.WebServiceUrl: Model.WebServiceUrl + "/" + Model.EndPoint;
+        <span class="badge badge-default">NC:WS</span>
+        <span class="badge badge-secondary">
+            @fullUrl
+        </span>
+    }
+    if(Model.ParameterBody != null)
+    {
+        @Html.DisplayFor(m=>m.ParameterBody, "JsonTemplateInline", "", null)
+    }
+    else
+    {
+        <span class="badge badge-warning">
+            尚未定义
+        </span>
+    }
+}
