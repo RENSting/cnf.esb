@@ -130,7 +130,7 @@ namespace cnf.esb.web.Controllers
                 api = SimpleRestfulDescriptorViewModel.CreateFrom(instance.Service);
                 returnType = ((SimpleRestfulDescriptorViewModel)api).ReturnType;
             }
-            else if(instance.Service.Type != ServiceType.NCWebService)
+            else if(instance.Service.Type == ServiceType.NCWebService)
             {
                 api = NCDescriptorViewModel.CreateFrom(instance.Service);
                 returnType = Models.SimpleRESTfulReturn.Json;

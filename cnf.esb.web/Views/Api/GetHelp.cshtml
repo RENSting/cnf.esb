@@ -25,30 +25,34 @@ else
 请求路径：<span class="text-primary">@ViewBag.Url</span>
 请求头： content-type: application/json; accept-charset:utf-8 
 </p>
-<pre>
-<code>
-请求体：(JSON)
+<div class="card">
+    <div class="card-header p-2">请求体：(JSON)</div>
+    <div class="card-body p-2">
+<pre><code>
 {
-    "id" : n,              //ESB分配给客户的ID，整数
-    "token" : "......",    //ESB分配给客户的令牌，随机字符串
-    "body" : {.....}       //向ESB发送的数据，其格式内容应该如下面的例子所示
+    "id" : n,                       //ESB分配给客户的ID，整数
+    "token" : "......",             //ESB分配给客户的令牌，随机字符串
+    "body" : <span class="=badge badge-success">通过ESB向服务方发送的数据</span>  //其格式内容应该如下面的例子所示
 }
 请求体中的body格式示例（注意严格遵循引号的使用）：
+<span class="=badge badge-success">通过ESB向服务方发送的数据</span>
 @ViewBag.BodyExample
-</code>
-</pre>
-<pre>
-<code>
-返回值：（JSON）
+</code></pre>
+    </div>
+</div>
+<div class="card mt-2">
+    <div class="card-header p-2">返回值：（JSON）</div>
+    <div class="card-body p-2">
+<pre><code>
 {
     returnCode : 0,             //0:正确返回，其它表示有错误
     errorMessage : "......"     //如果有错误，显示错误消息
     response : <span class="badge badge-warning">来自服务方的原始响应</span>
 }
-
 <span class="badge badge-warning">来自服务方的原始响应</span>
 @ViewBag.ReturnType
 @ViewBag.ReturnExample
-</code>
-</pre>
+</code></pre>
+    </div>
+</div>
 }

@@ -173,10 +173,10 @@ namespace cnf.esb.web.Models
         public WebRequest GetWebRequest(JObject source)
         {
             string fullUrl = WebServiceUrl.TrimEnd(new char[] { '/', ' ' });
-            if(!fullUrl.EndsWith(EndPoint, StringComparison.OrdinalIgnoreCase))
-            {
-                fullUrl = fullUrl + "/" + EndPoint;
-            }
+            // if(!fullUrl.EndsWith(EndPoint, StringComparison.OrdinalIgnoreCase))
+            // {
+            //     fullUrl = fullUrl + "/" + EndPoint;
+            // }
             StringBuilder bodyBuilder = new StringBuilder();
             JToken requestJson = source.SelectToken("$.body");
             //直接将客户发送来的body中的json作为web service的CDATA传递，
@@ -194,7 +194,7 @@ namespace cnf.esb.web.Models
                     new XAttribute(XNamespace.Xmlns + "test", test.NamespaceName),
                     new XAttribute(XNamespace.Xmlns + "soap", soap.NamespaceName),
                     new XElement(soap + "Body",
-                        new XElement(test + "syncPsndoc",
+                        new XElement(test + EndPoint, //"syncPsndoc",
                             new XElement("string",
                                 new XCData(data)
                             )
