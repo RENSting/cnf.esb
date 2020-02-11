@@ -1,35 +1,21 @@
 using System;
 using System.IO;
 using System.Net;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using cnf.esb.web.Models;
-using System.Linq.Expressions;
 using Newtonsoft.Json.Linq;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
+using RestSharp;
 
 namespace cnf.esb.web.Controllers
 {
     [AllowAnonymous]
     public class ApiController : Controller
     {
-        // /// <summary>
-        // /// parameter in
-        // /// </summary>
-        // class RequestBody
-        // {
-        //     public int Id { get; set; }
-        //     public string Token { get; set; }
-        //     public string Body { get; set; }
-        // }
-
         readonly EsbModelContext _esbModelContext;
 
         public ApiController(EsbModelContext modelContext)
@@ -83,10 +69,10 @@ namespace cnf.esb.web.Controllers
         /// 自动记录错误日志， 记录退出返回日志。
         /// 因此，调用该方法应该直接Return，防止在调用后又执行代码。
         /// </summary>
-        async Task<JsonResult> Error(int code, string message, string task, int instanceId, 
+        async Task<JsonResult> Error(int code, string message, string task, int instanceId,
             EsbOperation period, string invokedUrl = "")
         {
-            var log = EsbLog.Create(task, EsbLogLevel.Failure, period, 
+            var log = EsbLog.Create(task, EsbLogLevel.Failure, period,
                 HttpContext.Connection.RemoteIpAddress.ToString(), instanceId, message, invokedUrl);
             _esbModelContext.Add(log);
             await _esbModelContext.SaveChangesAsync();
@@ -130,7 +116,7 @@ namespace cnf.esb.web.Controllers
                 api = SimpleRestfulDescriptorViewModel.CreateFrom(instance.Service);
                 returnType = ((SimpleRestfulDescriptorViewModel)api).ReturnType;
             }
-            else if(instance.Service.Type == ServiceType.NCWebService)
+            else if (instance.Service.Type == ServiceType.NCWebService)
             {
                 api = NCDescriptorViewModel.CreateFrom(instance.Service);
                 returnType = Models.SimpleRESTfulReturn.Json;
@@ -181,21 +167,21 @@ namespace cnf.esb.web.Controllers
                 return await Error(-5, "客户程序没有注册，或者已经被禁用。", task, id, EsbOperation.Checking);
             }
             string requestIp = HttpContext.Connection.RemoteIpAddress.ToString();
-            string[] availableIps = instance.Client.HostIP.Split(new char[]{',', ';'}, StringSplitOptions.RemoveEmptyEntries);
-            if(availableIps == null || availableIps.Length <= 0)
+            string[] availableIps = instance.Client.HostIP.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            if (availableIps == null || availableIps.Length <= 0)
             {
                 return await Error(-1, "没有定义客户端有效IP地址列表", task, id, EsbOperation.Checking);
             }
             bool hasFound = false;
-            foreach(string ip in availableIps)
+            foreach (string ip in availableIps)
             {
-                if(requestIp.EndsWith(ip))
+                if (requestIp.EndsWith(ip))
                 {
                     hasFound = true;
                     break;
                 }
             }
-            if(!hasFound) //(instance.Client.HostIP != requestIp)
+            if (!hasFound) //(instance.Client.HostIP != requestIp)
             {
                 return await Error(-1, "请求的客户端IP地址不在API客户程序注册IP地址清单中", task, id, EsbOperation.Checking);
             }
@@ -227,7 +213,7 @@ namespace cnf.esb.web.Controllers
                     {
                         api = SimpleRestfulDescriptorViewModel.CreateFrom(instance.Service);
                     }
-                    else if(instance.Service.Type == ServiceType.NCWebService)
+                    else if (instance.Service.Type == ServiceType.NCWebService)
                     {
                         api = NCDescriptorViewModel.CreateFrom(instance.Service);
                     }
@@ -236,37 +222,31 @@ namespace cnf.esb.web.Controllers
                         throw new Exception("尚未实现的服务协定");
                     }
 
-                    WebRequest apiRequest = api.GetWebRequest(originalRequest);
+                    await LogInvoking(task, id, "", "API请求已就绪，正在发出...");
 
-                    await LogInvoking(task, id, apiRequest.RequestUri.OriginalString, "API请求已就绪，正在发出...");
+                    RawResponse rawResponse = await api.GetResponse(originalRequest);
+
+                    await LogInvoking(task, id, rawResponse.RequestUrl, "API请求已经返回，正在检查服务器状态");
+
                     try
                     {
-                        string apiReturnRaw;
-                        #region 向API服务器发送请求并得到响应
-                        using (WebResponse apiResponse = await apiRequest.GetResponseAsync())
+                        string apiReturnRaw = await rawResponse.ReadContentAsync();
+
+                        if (api.CheckResponse(apiReturnRaw, out string response))
                         {
-                            using (StreamReader apiResponseReader = new StreamReader(apiResponse.GetResponseStream(), Encoding.UTF8))
+                            await LogEnd(task, id, rawResponse.RequestUrl, response.Length + 4);
+                            return Json(new ResponseBody
                             {
-                                apiReturnRaw = await apiResponseReader.ReadToEndAsync();
-                            }
-                        }
-                        #endregion
-
-                        await LogInvoking(task, id, apiRequest.RequestUri.OriginalString, "API请求已经返回，正在检查服务器状态");
-
-                        if(api.CheckResponse(apiReturnRaw, out string response))
-                        {
-                            await LogEnd(task, id, apiRequest.RequestUri.OriginalString, response.Length + 4);
-                            return Json(new ResponseBody{
-                                ReturnCode = 0, Response = response
+                                ReturnCode = 0,
+                                Response = response
                             });
                         }
                         else
                         {
-                            await LogApiError(task, id, apiRequest.RequestUri.OriginalString, 
+                            await LogApiError(task, id, rawResponse.RequestUrl,
                                 $"in-params={originalRequest.ToString()} response={apiReturnRaw}");
-                            return await Error(1, "服务器返回错误。具体消息需要查看日志。", task, id, 
-                                EsbOperation.Respond, apiRequest.RequestUri.OriginalString);
+                            return await Error(1, "服务器返回错误。具体消息需要查看日志。", task, id,
+                                EsbOperation.Respond, rawResponse.RequestUrl);
                         }
                     }
                     catch (Exception ex)

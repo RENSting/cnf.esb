@@ -293,7 +293,7 @@ namespace cnf.esb.web.Models
             return returnJsonBuilder.ToString();
         }
 
-        public WebRequest GetWebRequest(JObject source)
+        public async System.Threading.Tasks.Task<RawResponse> GetResponse(JObject source)
         {
             string fullUrl = BaseApiUrl.TrimEnd(new char[] { '/', ' ' });
             StringBuilder bodyBuilder = new StringBuilder();
@@ -388,7 +388,10 @@ namespace cnf.esb.web.Models
             }
             #endregion
 
-            return apiRequest;
+            using(WebResponse webResponse = await apiRequest.GetResponseAsync())
+            {
+                return new RawResponse(webResponse, fullUrl);
+            }
         }
 
         public bool CheckResponse(string rawResponse, out string apiResponse)

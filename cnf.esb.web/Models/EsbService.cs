@@ -4,6 +4,9 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
+using RestSharp;
+using System.IO;
+using System.Text;
 
 namespace cnf.esb.web.Models
 {
@@ -18,6 +21,55 @@ namespace cnf.esb.web.Models
         public const string JSON = "json";
     }
 
+    public enum ResponseType
+    {
+        RestSharpResponse,
+        WebResponse
+    }
+
+    public class RawResponse
+    {
+        private string _requestUrl;
+        private object _response;
+
+        private ResponseType _type;
+
+        public RawResponse(IRestResponse response, string requestUrl)
+        {
+            _requestUrl = requestUrl;
+            _response = response;
+            _type = ResponseType.RestSharpResponse;
+        }
+
+        public RawResponse(WebResponse response, string requestUrl)
+        {
+            _requestUrl = requestUrl;
+            _response = response;
+            _type = ResponseType.WebResponse;
+        }
+
+        public string RequestUrl => _requestUrl;
+
+        public async System.Threading.Tasks.Task<string> ReadContentAsync()
+        {
+            if (_type == ResponseType.WebResponse)
+            {
+                using (StreamReader apiResponseReader =
+                    new StreamReader(((WebResponse)_response).GetResponseStream(), Encoding.UTF8))
+                {
+                    return await apiResponseReader.ReadToEndAsync();
+                }
+            }
+            else if (_type == ResponseType.RestSharpResponse)
+            {
+                return ((IRestResponse)_response).Content;
+            }
+            else
+            {
+                throw new Exception("not implemented yet");
+            }
+        }
+    }
     public interface IServiceDescriptorViewModel
     {
         int ServiceID { get; set; }
@@ -33,7 +85,13 @@ namespace cnf.esb.web.Models
         /// <returns></returns>
         string GetPostSample();
         string GetReturnSample();
-        WebRequest GetWebRequest(JObject source);
+
+        /// <summary>
+        /// Invoke the service and get response
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        System.Threading.Tasks.Task<RawResponse> GetResponse(JObject source);
 
         bool CheckResponse(string rawResponse, out string apiResponse);
     }
@@ -138,5 +196,4 @@ namespace cnf.esb.web.Models
         public string ErrorMessage { get; set; }
         public string Response { get; set; }
     }
-
 }

@@ -7,6 +7,7 @@ using System.Xml.Linq;
 using System.ComponentModel.DataAnnotations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RestSharp;
 
 namespace cnf.esb.web.Models
 {
@@ -170,13 +171,9 @@ namespace cnf.esb.web.Models
             return returnJsonBuilder.ToString();
         }
 
-        public WebRequest GetWebRequest(JObject source)
+        public async System.Threading.Tasks.Task<RawResponse> GetResponse(JObject source)
         {
             string fullUrl = WebServiceUrl.TrimEnd(new char[] { '/', ' ' });
-            // if(!fullUrl.EndsWith(EndPoint, StringComparison.OrdinalIgnoreCase))
-            // {
-            //     fullUrl = fullUrl + "/" + EndPoint;
-            // }
             StringBuilder bodyBuilder = new StringBuilder();
             JToken requestJson = source.SelectToken("$.body");
             //直接将客户发送来的body中的json作为web service的CDATA传递，
@@ -204,30 +201,17 @@ namespace cnf.esb.web.Models
             );
             
             string postXml = document.Declaration + Environment.NewLine + document.ToString();
-            
-            WebRequest apiRequest;
+
+            var client = new RestClient(fullUrl);
+            var request = new RestRequest(Method.POST);
             if (fullUrl.StartsWith("https", StringComparison.OrdinalIgnoreCase))
             {
-                apiRequest = HttpWebRequest.CreateHttp(fullUrl);
-                ((HttpWebRequest)apiRequest).ServerCertificateValidationCallback
-                    = (s, c, e, t) => true;
+                client.RemoteCertificateValidationCallback = (s, c, e, t) => true;
             }
-            else
-            {
-                apiRequest = WebRequest.Create(fullUrl);
-            }
-            apiRequest.Method = HttpMethod.POST.ToString();
-            //apiRequest.Headers.Add("", "");
-
-            byte[] buffer = Encoding.UTF8.GetBytes(bodyBuilder.ToString());
-            apiRequest.ContentLength = buffer.Length;
-            using (Stream apiStream = apiRequest.GetRequestStream())
-            {
-                apiStream.Write(buffer, 0, buffer.Length);
-                apiStream.Close();
-            }
-
-            return apiRequest;
+            request.AddHeader("Content-Type", "application/xml");
+            request.AddParameter("application/xml", postXml, ParameterType.RequestBody);
+            IRestResponse response = await client.ExecuteAsync(request);
+            return new RawResponse(response, fullUrl);
         }
 
         public bool CheckResponse(string rawResponse, out string apiResponse)

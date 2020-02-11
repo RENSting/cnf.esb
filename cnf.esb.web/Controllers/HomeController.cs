@@ -12,12 +12,24 @@ using Microsoft.Extensions.Options;
 using System.Xml.Linq;
 using System.Linq;
 using System.IO;
+using System.Net;
+using RestSharp;
 
 namespace cnf.esb.web.Controllers
 {
     [AllowAnonymous]
     public class HomeController : Controller
     {
+        public IActionResult TestNCRest()
+        {
+            var client = new RestClient("http://10.1.100.131:8081/uapws/service/syncdept");
+            var request = new RestRequest(Method.POST);
+            request.AddHeader("Content-Type", "application/xml");
+            request.AddParameter("application/xml", "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \n    xmlns:test=\"http://www.w3.org/2001/XMLSchema\" \n    xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n　　<soap:Body>\n　　　　<test:syncDept>\n　　　　　　<string>\n  <![CDATA[\n   {\n   \"data\": {\n    \"org_dept\": [{\n     \"status\": \"2\",\n     \"pk_org\": \"机械化施工分公司\",\n     \"name\": \"测试新增12_3\",\n     \"createdate\": \"2020-02-10\",\n     \"code\": \"02100\",\n     \"pk_dept\": \"202001130003\"\n     }]\n    }\n   }\n  ]]>\n　　　　　　</string>\n　　　　</test:syncDept>\n　　</soap:Body>\n</soap:Envelope>\n", ParameterType.RequestBody);
+            IRestResponse response = client.Execute(request);
+            return Content(response.Content);
+        }
+        
         public IActionResult Get()
         {
             string soapXml = @"
@@ -80,8 +92,8 @@ namespace cnf.esb.web.Controllers
                 {
                     //no fault,
                     var returnNode = (from e in document.Descendants("return")
-                                        select e).SingleOrDefault();
-                    if(returnNode != null)
+                                      select e).SingleOrDefault();
+                    if (returnNode != null)
                     {
                         return Content(returnNode.Value);
                     }
