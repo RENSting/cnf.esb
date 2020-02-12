@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using RestSharp;
 using System.IO;
 using System.Text;
+using Newtonsoft.Json;
 
 namespace cnf.esb.web.Models
 {
@@ -93,7 +94,7 @@ namespace cnf.esb.web.Models
         /// <returns></returns>
         System.Threading.Tasks.Task<RawResponse> GetResponse(JObject source);
 
-        bool CheckResponse(string rawResponse, out string apiResponse);
+        bool CheckResponse(string rawResponse, out string apiResponse, out SimpleRESTfulReturn type);
     }
 
     public enum ServiceType
@@ -192,8 +193,42 @@ namespace cnf.esb.web.Models
     /// </summary>
     public class ResponseBody
     {
-        public int ReturnCode { get; set; }
-        public string ErrorMessage { get; set; }
-        public string Response { get; set; }
+        public string Value{get;set;}
+        public ResponseBody(int returnCode, string errorMessage, string response, SimpleRESTfulReturn type)
+        {
+            StringBuilder responseBuilder = new StringBuilder();
+            using (JsonWriter writer = new JsonTextWriter(new StringWriter(responseBuilder)))
+            {
+                writer.Formatting = Formatting.Indented;
+                writer.WriteStartObject();
+                writer.WritePropertyName("ReturnCode");
+                writer.WriteValue(returnCode);
+                writer.WritePropertyName("ErrorMessage");
+                writer.WriteValue(errorMessage);
+                writer.WritePropertyName("Response");
+                if(type == SimpleRESTfulReturn.Empty)
+                {
+                    writer.WriteNull();
+                }
+                else if(type == SimpleRESTfulReturn.Json)
+                {
+                    writer.WriteRawValue(response);
+                }
+                else if(type == SimpleRESTfulReturn.PlainText)
+                {
+                    writer.WriteValue(response);
+                }
+                else
+                {
+                    writer.WriteValue(response);
+                }
+                writer.WriteEndObject();
+                writer.Flush();
+            }
+            Value = responseBuilder.ToString();
+        }
+        //public int ReturnCode { get; set; }
+        //public string ErrorMessage { get; set; }
+        //public string Response { get; set; }
     }
 }

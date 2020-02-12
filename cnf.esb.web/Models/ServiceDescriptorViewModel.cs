@@ -14,9 +14,9 @@ namespace cnf.esb.web.Models
     {
         [Display(Name = "不返回任何值")]
         Empty,
-        [Display(Name = "返回普通文本或字符串")]
+        [Display(Name = "返回普通文本")]
         PlainText,
-        [Display(Name = "返回JSON格式序列化的字符串")]
+        [Display(Name = "返回JSON")]
         Json
     }
 
@@ -394,8 +394,9 @@ namespace cnf.esb.web.Models
             }
         }
 
-        public bool CheckResponse(string rawResponse, out string apiResponse)
+        public bool CheckResponse(string rawResponse, out string apiResponse, out SimpleRESTfulReturn type)
         {
+            type = ReturnType;
             apiResponse = rawResponse;
             
             #region 对响应进行正确性检查

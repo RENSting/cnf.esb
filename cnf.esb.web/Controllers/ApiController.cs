@@ -1,15 +1,12 @@
 using System;
 using System.IO;
-using System.Net;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using cnf.esb.web.Models;
 using Newtonsoft.Json.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
-using RestSharp;
 
 namespace cnf.esb.web.Controllers
 {
@@ -69,21 +66,16 @@ namespace cnf.esb.web.Controllers
         /// 自动记录错误日志， 记录退出返回日志。
         /// 因此，调用该方法应该直接Return，防止在调用后又执行代码。
         /// </summary>
-        async Task<JsonResult> Error(int code, string message, string task, int instanceId,
+        async Task<ContentResult> Error(int code, string message, string task, int instanceId,
             EsbOperation period, string invokedUrl = "")
         {
             var log = EsbLog.Create(task, EsbLogLevel.Failure, period,
                 HttpContext.Connection.RemoteIpAddress.ToString(), instanceId, message, invokedUrl);
             _esbModelContext.Add(log);
             await _esbModelContext.SaveChangesAsync();
-            ResponseBody response = new ResponseBody
-            {
-                ErrorMessage = message,
-                Response = string.Empty,
-                ReturnCode = code
-            };
+            ResponseBody response = new ResponseBody(code, message, "", SimpleRESTfulReturn.Empty);
             await LogEnd(task, instanceId, invokedUrl, message.Length + 4);
-            return Json(response);
+            return Content(response.Value);
         }
 
         [Route("api/Help/{id}")]
@@ -147,7 +139,7 @@ namespace cnf.esb.web.Controllers
 
         [HttpPost]
         [Route("api/Invoke/{id}")]
-        public async Task<JsonResult> CallInstance(int id)
+        public async Task<ContentResult> CallInstance(int id)
         {
             string task = Guid.NewGuid().ToString();
 
@@ -232,14 +224,10 @@ namespace cnf.esb.web.Controllers
                     {
                         string apiReturnRaw = await rawResponse.ReadContentAsync();
 
-                        if (api.CheckResponse(apiReturnRaw, out string response))
+                        if (api.CheckResponse(apiReturnRaw, out string response, out var type))
                         {
                             await LogEnd(task, id, rawResponse.RequestUrl, response.Length + 4);
-                            return Json(new ResponseBody
-                            {
-                                ReturnCode = 0,
-                                Response = response
-                            });
+                            return Content((new ResponseBody(0, "", response, type)).Value);
                         }
                         else
                         {

@@ -214,7 +214,7 @@ namespace cnf.esb.web.Models
             return new RawResponse(response, fullUrl);
         }
 
-        public bool CheckResponse(string rawResponse, out string apiResponse)
+        public bool CheckResponse(string rawResponse, out string apiResponse, out SimpleRESTfulReturn type)
         {
             XNamespace soap = "http://schemas.xmlsoap.org/soap/envelope/";
             using(var reader = new StringReader(rawResponse))
@@ -229,17 +229,20 @@ namespace cnf.esb.web.Models
                                         select e).SingleOrDefault();
                     if(returnNode != null)
                     {
+                        type = SimpleRESTfulReturn.Json;
                         apiResponse = returnNode.Value;
                         return true;
                     }
                     else
                     {
+                        type = SimpleRESTfulReturn.PlainText;
                         apiResponse = rawResponse;
                         return false;
                     }
                 }
                 else
                 {
+                    type = SimpleRESTfulReturn.PlainText;
                     apiResponse = $"FaultCode={faultNode.Element("faultcode").Value},"
                             + $"FaultString={faultNode.Element("faultstring").Value}";
                     return false;
