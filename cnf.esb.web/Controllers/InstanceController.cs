@@ -24,7 +24,7 @@ namespace cnf.esb.web.Controllers
             _esbModelContext = esbModelContext;
         }
 
-        public async Task<IActionResult> Show(int id, int? pageIndex)
+        public async Task<IActionResult> Show(int id, int? pageIndex, EsbLogLevel? level, DateTime? logStart, DateTime? logEnd)
         {
             var instance = await _esbModelContext.Instances.Where(m=>m.ID==id)
                                     .Include(m=>m.Client)
@@ -33,17 +33,22 @@ namespace cnf.esb.web.Controllers
             {
                 return NotFound();
             }
-            int pageSize = 100;
+            int pageSize = 5;
             if(pageIndex == null)pageIndex = 0;
             var logs = from log in _esbModelContext.Logs
                         where log.InstanceID == id
+                            && (level == null || log.LogLevel==level.Value)
+                            && (logStart == null || log.CreatedOn>= logStart.Value)
+                            && (logEnd == null || log.CreatedOn <= logEnd.Value.AddDays(1.0D))
                         orderby log.CreatedOn descending
                         select log;
-                        // new {log.ID, log.TaskIdentity, log.CreatedOn, log.Operation
-                        //     , log.LogLevel, log.FromIP, log.InvokedUrl, log.RequestLength
-                        //     , log.ResponseLength};
+            ViewBag.Filter = (level == null?"": $"{level.ToString()}  ")
+                    + (logStart==null?"":$"晚于{logStart.Value.ToShortDateString()}  ")
+                    + (logEnd == null?"":$"早于{logEnd.Value.ToShortDateString()}");
+
             int totalCount = await logs.CountAsync();
             ViewBag.Pages = (int)Math.Ceiling(totalCount * 1.0D / pageSize);
+            ViewBag.PageIndex = pageIndex;
             int skipCount = pageIndex.Value * pageSize;
             if(skipCount > totalCount) skipCount = totalCount;
             ViewBag.Logs = await logs.Skip(skipCount).Take(pageSize).ToListAsync();
@@ -64,13 +69,28 @@ namespace cnf.esb.web.Controllers
             }
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int? consumer, string group, string name)
         {
-            var instances = _esbModelContext.Instances
-                    .Include(i => i.Client)
-                    .Include(i => i.Service)
-                    .Include(i => i.InstanceMapping);
+            IQueryable<KeyValuePair<int,string>> consumers = from c in _esbModelContext.Consumers
+                            orderby c.Name
+                            select  new KeyValuePair<int, string>(c.ID, c.Name);
 
+            var groups = from s in _esbModelContext.Services
+                         orderby s.GroupName
+                         select s.GroupName;
+
+            var instances = _esbModelContext.Instances.Include(i=>i.Client).Include(i=>i.Service)
+                    .Where(i => string.IsNullOrWhiteSpace(name) 
+                            || i.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
+                    .Where(i=> string.IsNullOrWhiteSpace(group)
+                            || i.Service.GroupName.Equals(group, StringComparison.OrdinalIgnoreCase))
+                    .Where(i=> consumer==null || i.ClientID==consumer.Value);
+
+            ViewBag.Consumers = await consumers.ToListAsync();
+            ViewBag.Groups = await groups.Distinct().ToListAsync();
+            ViewBag.SelectedConsumer = consumer;
+            ViewBag.SelectedGroup = group;
+            ViewBag.Name = name;
             return View(InstanceViewModel.ConvertFrom(await instances.ToListAsync()));
         }
 

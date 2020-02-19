@@ -211,6 +211,17 @@ namespace cnf.esb.web.Models
             request.AddHeader("Content-Type", "application/xml");
             request.AddParameter("application/xml", postXml, ParameterType.RequestBody);
             IRestResponse response = await client.ExecuteAsync(request);
+            if(!response.IsSuccessful)
+            {
+                if(response.ErrorException != null)
+                {
+                    throw response.ErrorException;
+                }
+                else
+                {
+                    throw new Exception(response.ErrorMessage);
+                }
+            }
             return new RawResponse(response, fullUrl);
         }
 

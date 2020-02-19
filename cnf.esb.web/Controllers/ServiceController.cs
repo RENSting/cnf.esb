@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using cnf.esb.web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 
@@ -32,10 +33,20 @@ namespace cnf.esb.web.Controllers
 
         #region Service base information management
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string groupName, string name)
         {
+            var groups = from svc in _esbModelContext.Services
+                        select svc.GroupName;
+            
             var services = from s in _esbModelContext.Services
-                           select s;
+                        where (string.IsNullOrWhiteSpace(groupName)
+                            || s.GroupName.Contains(groupName, StringComparison.OrdinalIgnoreCase)
+                        ) && (string.IsNullOrWhiteSpace(name)
+                            || s.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
+                        select s;
+            ViewBag.Name = name;
+            ViewBag.SelectedGroup = groupName;
+            ViewBag.Groups = await groups.Distinct().ToListAsync();
             return View(await services.ToListAsync());
         }
 
@@ -47,7 +58,7 @@ namespace cnf.esb.web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateService(
-            [Bind("Name, Type, FullDescription")] EsbService newService)
+            [Bind("Name, Type, GroupName, FullDescription")] EsbService newService)
         {
             if (ModelState.IsValid)
             {

@@ -21,31 +21,52 @@
     <p class="text-muted small">
         @Html.DisplayTextFor(m=>m.Description)
     </p>
+    <p class="text-muted small">
+        客户程序：@Html.DisplayTextFor(m=>m.Client.Name)
+        (IP: @Html.DisplayTextFor(m=>m.Client.HostIP)) 
+        &nbsp;&lt;&equals;&equals;&equals;&gt;&nbsp;
+        服务：<span class="badge badge-success">@Model.Service.Type.ToString()</span>
+        @Html.DisplayTextFor(m=>m.Service.Name)
+    </p>
 </div>
-<div>
-    客户程序：@Html.DisplayTextFor(m=>m.Client.Name)
-    (IP: @Html.DisplayTextFor(m=>m.Client.HostIP)) 
-    &nbsp;&lt;&equals;&equals;&equals;&gt;&nbsp;
-    服务：<span class="badge badge-success">@Model.Service.Type.ToString()</span>
-    @Html.DisplayTextFor(m=>m.Service.Name)
-</div>
-<h5>调用日志</h5>
+<hr>
+<form asp-action="Show" asp-antiforgery="true" method="POST" class="form-inline pb-2">
+    <div class="form-group mr-1">
+        <input type="date" name="logStart" class="form-control form-control-sm"
+            placeholder="晚于...">
+    </div>
+    <div class="form-group mr-2">
+        <input type="date" name="logEnd" class="form-control form-control-sm"
+            placeholder="早于...">
+    </div>
+    <div class="form-group mr-2">
+        @Html.DropDownList("level",Html.GetEnumSelectList<EsbLogLevel>(), 
+            "-=日志级别=-", new {@class="form-control form-control-sm"})
+    </div>
+    <div class="form-group">
+        <input type="submit" class="btn btn-sm btn-success" value="筛选">
+    </div>
+    <div class="form-group ml-2">
+        <input type="text" readonly class="form-control-plaintext" 
+            value="@ViewBag.Filter">
+    </div>
+</form>
 @if(ViewBag.Logs == null || ViewBag.Pages == 0)
 {
     <div class="alert alert-light">
-        此API尚无被客户调用的日志记录
+        此API尚无满足条件的客户调用日志
     </div>
 }
 else
 {
-<div>
+<div class="small">
     <table class="table table-sm table-border">
         <thead class="bg-secondary text-white">
             <tr>
                 <th>任务GUID</th>
                 <th>记录时间</th>
-                <th>阶段</th>
                 <th>级别</th>
+                <th>操作</th>
                 <th>来源IP</th>
                 <th>远程API</th>
                 <th>请求长度</th>
@@ -84,7 +105,7 @@ else
                     <td>@item.ResponseLength.ToString()</td>
                     <td>
                         <a asp-action="LogDetails" asp-route-id="@item.ID" 
-                            class="btn btn-sm btn-default">查看详情</a>
+                            class="btn btn-sm btn-default p-0">查看</a>
                     </td>
                 </tr>
             }
@@ -93,19 +114,24 @@ else
     <nav aria-label="API invoking logs">
     <ul class="pagination">
         <li class="page-item">
-            <a class="page-link" href="#" aria-label="Previous">
+            <a class="page-link" asp-action="Show" asp-route-id="@Model.ID" asp-route-pageIndex="0"
+                aria-label="Previous">
                 <span aria-hidden="true">&laquo;</span>
             </a>
         </li>
     @for(var i = 0; i < (int)ViewBag.Pages; i++)
     {
-        <li class="page-item">
+        var pageNumber = string.Format("{0}", i+1);
+        var className = i == ViewBag.PageIndex? "page-item active":"page-item";
+        <li class="@className">
             <a asp-action="Show" asp-route-id="@Model.ID" asp-route-pageIndex="@i"
-                 class="page-link">@{(i+1).ToString();}</a>
+                 class="page-link">@pageNumber</a>
         </li>
     }
         <li class="page-item">
-            <a class="page-link" href="#" aria-label="Next">
+            <a class="page-link" asp-action="Show" asp-route-id="@Model.ID" 
+                asp-route-pageIndex='@string.Format("{0}", @ViewBag.Pages-1)'
+                aria-label="Next">
                 <span aria-hidden="true">&raquo;</span>
             </a>
         </li>

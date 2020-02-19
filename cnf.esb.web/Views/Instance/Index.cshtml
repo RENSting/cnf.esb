@@ -6,6 +6,55 @@
 }
 
 <h3>API服务调用实例清单</h3>
+<form asp-action="Index" method="GET" class="form-inline py-2">
+    <div class="form-grou mr-2">
+        <select name="consumer" class="form-control form-control-sm">
+            <!option value=""
+                @if(ViewBag.SelectedConsumer == null || ViewBag.SelectedConsumer <= 0)
+                {
+                    @:selected
+                }
+            >-=选择客户程序=-</!option>
+        @foreach (var item in ViewBag.Consumers)
+        {
+            var consumerId = item.Key;
+            var consumerName = item.Value;
+            <!option value="@consumerId"
+                @if(ViewBag.SelectedConsumer != null && consumerId==ViewBag.SelectedConsumer)
+                {
+                    @:selected
+                }
+            >@consumerName</!option>
+        }
+        </select>
+    </div>
+    <div class="form-grou mr-2">
+        <select name="group" class="form-control form-control-sm">
+            <!option value=""
+                @if(string.IsNullOrWhiteSpace(ViewBag.SelectedGroup))
+                {
+                    @:selected
+                }
+            >-=选择分组=-</!option>
+        @foreach (string item in ViewBag.Groups)
+        {
+            <!option value="@item"
+                @if(item.Equals(ViewBag.SelectedGroup, StringComparison.OrdinalIgnoreCase))
+                {
+                    @:selected
+                }
+            >@item</!option>
+        }
+        </select>
+    </div>
+    <div class="form-group mr-2">
+        <input type="text" name="name" class="form-control form-control-sm" 
+            value="@ViewBag.Name" placeholder="实例名称模糊检索">
+    </div>
+    <div class="form-group">
+        <input type="submit" class="btn btn-sm btn-success" value="筛选">
+    </div>
+</form>
 
 <table class="table table-sm">
     <thead>

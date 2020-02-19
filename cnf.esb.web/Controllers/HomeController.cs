@@ -12,14 +12,16 @@ using Microsoft.Extensions.Options;
 using System.Xml.Linq;
 using System.Linq;
 using System.IO;
-using System.Net;
+using Microsoft.EntityFrameworkCore;
 using RestSharp;
 
 namespace cnf.esb.web.Controllers
 {
-    [AllowAnonymous]
+    [Authorize]
     public class HomeController : Controller
     {
+        readonly EsbModelContext _esbModelContext;
+
         public IActionResult TestNCRest()
         {
             var client = new RestClient("http://10.1.100.131:8081/uapws/service/syncdept");
@@ -29,7 +31,7 @@ namespace cnf.esb.web.Controllers
             IRestResponse response = client.Execute(request);
             return Content(response.Content);
         }
-        
+
         public IActionResult Get()
         {
             string soapXml = @"
@@ -111,10 +113,14 @@ namespace cnf.esb.web.Controllers
         }
 
         readonly AdminSettings _admin;
-        public HomeController(IOptionsSnapshot<AdminSettings> adminSettings)
+        public HomeController(IOptionsSnapshot<AdminSettings> adminSettings,
+                EsbModelContext modelContext)
         {
             _admin = adminSettings.Value;
+            _esbModelContext = modelContext;
         }
+
+        [AllowAnonymous]
         public IActionResult Login()
         {
             HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -122,7 +128,7 @@ namespace cnf.esb.web.Controllers
             return View();
         }
 
-        [HttpPost]
+        [HttpPost, AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel viewModel)
         {
@@ -152,19 +158,90 @@ namespace cnf.esb.web.Controllers
         public IActionResult Logout()
         {
             HttpContext.SignOutAsync();
-            return RedirectToAction(nameof(Login));
+            return RedirectToAction(nameof(Index));
         }
 
+        [AllowAnonymous]
         public IActionResult Index()
         {
             return View();
         }
 
+        public IActionResult Dashboard()
+        {
+            ViewBag.ConsumerCount = _esbModelContext.Consumers.Count();
+            ViewBag.ServiceCount = _esbModelContext.Services.Count();
+            ViewBag.InstanceCount = _esbModelContext.Instances.Count();
+
+            return View();
+        }
+
+        [AllowAnonymous]
+        public async Task<JsonResult> CalcFlow(DateTime? start, DateTime? end)
+        {
+            var dateGroupedLogs = _esbModelContext.Logs
+                    .Where(l => (start == null || l.CreatedOn.Date >= start.Value)
+                            && (end == null || l.CreatedOn.Date <= end))
+                    .GroupBy(l => l.CreatedOn.Date);
+            var dayFlow = from g in dateGroupedLogs
+                          select new
+                          {
+                              Day = g.Key.ToString("yyyyMMdd"),
+                              Tasks = g.Select(l => l.TaskIdentity).Distinct().Count(),
+                              Errors = g.Where(l => l.LogLevel == EsbLogLevel.Failure).Count(),
+                              In = g.Sum(l => l.RequestLength),
+                              Out = g.Sum(l => l.ResponseLength)
+                          };
+            return Json(await dayFlow.ToListAsync());
+        }
+
+        [AllowAnonymous]
+        public async Task<ContentResult> GetFlowTable(DateTime? start, DateTime? end)
+        {
+            var dayFlow = _esbModelContext.Logs
+                    .Where(l => (start == null || l.CreatedOn.Date >= start.Value)
+                            && (end == null || l.CreatedOn.Date <= end))
+                    .GroupBy(l => l.CreatedOn.Date)
+                    .Select(g => new
+                    {
+                        Day = g.Key.ToString("yyyyMMdd"),
+                        Tasks = g.Select(l => l.TaskIdentity).Distinct().Count(),
+                        Errors = g.Where(l => l.LogLevel == EsbLogLevel.Failure).Count(),
+                        In = g.Sum(l => l.RequestLength),
+                        Out = g.Sum(l => l.ResponseLength)
+
+                    });
+            System.Text.StringBuilder tableBuilder = new System.Text.StringBuilder();
+
+            tableBuilder.AppendLine("<table class='table table-sm table-border'>");
+            tableBuilder.AppendLine("<tr>");
+            tableBuilder.AppendLine($"<td>日期</td>");
+            tableBuilder.AppendLine($"<td>请求数</td>");
+            tableBuilder.AppendLine($"<td>错误数</td>");
+            tableBuilder.AppendLine($"<td>入栈字节数</td>");
+            tableBuilder.AppendLine($"<td>出栈字节数</td>");
+            tableBuilder.AppendLine("</tr>");
+            foreach (var r in await dayFlow.ToListAsync())
+            {
+                tableBuilder.AppendLine("<tr>");
+                tableBuilder.AppendLine($"<td>{r.Day}</td>");
+                tableBuilder.AppendLine($"<td>{r.Tasks}</td>");
+                tableBuilder.AppendLine($"<td>{r.Errors}</td>");
+                tableBuilder.AppendLine($"<td>{r.In}</td>");
+                tableBuilder.AppendLine($"<td>{r.Out}</td>");
+                tableBuilder.AppendLine("</tr>");
+            }
+            tableBuilder.AppendLine("</table>");
+            return Content(tableBuilder.ToString());
+        }
+
+        [AllowAnonymous]
         public IActionResult Privacy()
         {
             return View();
         }
 
+        [AllowAnonymous]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

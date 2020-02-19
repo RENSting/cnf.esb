@@ -244,7 +244,7 @@ namespace cnf.esb.web.Controllers
                 }
                 catch (Exception ex)
                 {
-                    return await Error(-100, "未知的异常" + ex.Message, task, id, EsbOperation.Checking);
+                    return await Error(-100, ex.Message, task, id, EsbOperation.Checking);
                 }
             }
         }

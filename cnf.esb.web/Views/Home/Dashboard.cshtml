@@ -1,0 +1,21 @@
+@{
+    ViewData["Title"] = "ESB";
+}
+<h3>看板</h3>
+<p>
+    已登记的消费者：@ViewBag.ConsumerCount
+    <br>
+    已注册的服务：@ViewBag.ServiceCount
+    <br>
+    绑定的API实例：@ViewBag.InstanceCount
+</p>
+
+<div id="flowTable">
+
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        $("#flowTable").load("/home/getFlowTable");
+    </script>
+}
