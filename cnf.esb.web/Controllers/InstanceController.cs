@@ -33,7 +33,7 @@ namespace cnf.esb.web.Controllers
             {
                 return NotFound();
             }
-            int pageSize = 5;
+            int pageSize = 20;
             if(pageIndex == null)pageIndex = 0;
             var logs = from log in _esbModelContext.Logs
                         where log.InstanceID == id
