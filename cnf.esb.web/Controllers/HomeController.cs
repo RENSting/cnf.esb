@@ -181,9 +181,10 @@ namespace cnf.esb.web.Controllers
         {
             var dateGroupedLogs = _esbModelContext.Logs
                     .Where(l => (start == null || l.CreatedOn.Date >= start.Value)
-                            && (end == null || l.CreatedOn.Date <= end))
+                            && (end == null || l.CreatedOn.Date <= end.Value))
                     .GroupBy(l => l.CreatedOn.Date);
             var dayFlow = from g in dateGroupedLogs
+                          orderby g.Key
                           select new
                           {
                               Day = g.Key.ToString("yyyyMMdd"),
@@ -200,7 +201,7 @@ namespace cnf.esb.web.Controllers
         {
             var dayFlow = _esbModelContext.Logs
                     .Where(l => (start == null || l.CreatedOn.Date >= start.Value)
-                            && (end == null || l.CreatedOn.Date <= end))
+                            && (end == null || l.CreatedOn.Date <= end.Value))
                     .GroupBy(l => l.CreatedOn.Date)
                     .Select(g => new
                     {
@@ -210,7 +211,7 @@ namespace cnf.esb.web.Controllers
                         In = g.Sum(l => l.RequestLength),
                         Out = g.Sum(l => l.ResponseLength)
 
-                    });
+                    }).OrderBy(d => d.Day);
             System.Text.StringBuilder tableBuilder = new System.Text.StringBuilder();
 
             tableBuilder.AppendLine("<table class='table table-sm table-border'>");

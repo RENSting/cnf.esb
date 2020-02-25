@@ -3,19 +3,80 @@
 }
 <h3>看板</h3>
 <p>
-    已登记的消费者：@ViewBag.ConsumerCount
+    已登记的消费者： <a asp-action="Index" asp-controller="Consumer">@ViewBag.ConsumerCount</a>
     <br>
-    已注册的服务：@ViewBag.ServiceCount
+    已注册的服务：<a asp-action="Index" asp-controller="Service">@ViewBag.ServiceCount</a>
     <br>
-    绑定的API实例：@ViewBag.InstanceCount
+    绑定的API实例：<a asp-action="Index" asp-controller="Instance">@ViewBag.InstanceCount</a>
 </p>
 
+<form class="form-inline my-2">
+    <div class="form-group mr-2">
+        <label class="control-label control-label-sm mr-2">Start</label>
+        <input type="date" name="startDate" id="startDate" class="form-control form-control-sm">
+    </div>
+    <div class="form-group mr-2">
+        <label class="control-label control-label-sm mr-2">End</label>
+        <input type="date" name="endDate" id="endDate" class="form-control form-control-sm">
+    </div>
+    <div class="form-group">
+        <button id="getFlow" name="getFlow" class="btn btn-sm btn-success"
+            onclick="refreshFlowTable(); return false;"
+        >Get Flow</button>
+    </div>
+</form>
+<div class="alert alert-warning">
+    The period that you can select cannot greater than 3 months.
+</div>
 <div id="flowTable">
 
 </div>
 
 @section Scripts{
     <script type="text/javascript">
-        $("#flowTable").load("/home/getFlowTable");
+        function getYear(dateStr){
+            return parseInt(dateStr.substr(0, 4));
+        }
+        function getMonth(dateStr){
+            return parseInt(dateStr.substr(5, 2));
+        }
+        function getDay(dateStr){
+            return parseInt(dateStr.substr(8,2));
+        }
+        function parseDateObject(dateStr){
+            if(dateStr == ''){
+                return new Date();
+            }
+            else{
+                return new Date(getYear(dateStr), getMonth(dateStr) - 1, getDay(dateStr));
+            }
+        }
+
+        function checkPeriod(){
+            var d1 = parseDateObject($('#startDate').val());
+            var d2 = parseDateObject($('#endDate').val());
+            var d3 = d2-d1;
+            if(d3 < 0){
+                alert('the end date must be later than start date.');
+                return false;
+            }
+            if(d3 > 1000*3600*24*100){
+                alert('the query period must be lease than 3 months.');
+                return false;
+            }
+            return true;
+        }
+
+        function refreshFlowTable(){
+            if(checkPeriod()==false){
+                return;
+            }
+            var start = $('#startDate').val();
+            var end = $('#endDate').val();
+            var queryString = '?start=' + start + '&end=' + end;
+            $('#flowTable').load('/home/getFlowTable' + queryString);
+        }
+
+        refreshFlowTable();
     </script>
 }
