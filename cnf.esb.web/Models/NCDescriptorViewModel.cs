@@ -217,9 +217,19 @@ namespace cnf.esb.web.Models
                 {
                     throw response.ErrorException;
                 }
-                else
+                else if(string.IsNullOrWhiteSpace(response.ErrorMessage))
                 {
                     throw new Exception(response.ErrorMessage);
+                }
+                else
+                {
+                    StringBuilder errorBuilder = new StringBuilder();
+                    errorBuilder.AppendLine($"向 {fullUrl} 发送数据出现错误。");
+                    errorBuilder.AppendLine($"StatusCode={response.StatusCode}");
+                    errorBuilder.AppendLine($"Response:{response.Content}");
+                    errorBuilder.AppendLine("Xml Parameter Posted Is:");
+                    errorBuilder.AppendLine(postXml);
+                    throw new Exception(errorBuilder.ToString());
                 }
             }
             return new RawResponse(response, fullUrl);
