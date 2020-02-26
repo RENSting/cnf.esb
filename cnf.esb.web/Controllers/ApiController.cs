@@ -239,12 +239,12 @@ namespace cnf.esb.web.Controllers
                     }
                     catch (Exception ex)
                     {
-                        return await Error(1, ex.Message, task, id, EsbOperation.Invoking);
+                        return await Error(1, ex.ToString(), task, id, EsbOperation.Invoking);
                     }
                 }
                 catch (Exception ex)
                 {
-                    return await Error(-100, ex.Message, task, id, EsbOperation.Checking);
+                    return await Error(-100, ex.ToString(), task, id, EsbOperation.Checking);
                 }
             }
         }
