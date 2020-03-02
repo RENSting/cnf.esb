@@ -217,7 +217,7 @@ namespace cnf.esb.web.Models
                 {
                     throw response.ErrorException;
                 }
-                else if(string.IsNullOrWhiteSpace(response.ErrorMessage))
+                else if(!string.IsNullOrWhiteSpace(response.ErrorMessage))
                 {
                     throw new Exception(response.ErrorMessage);
                 }
