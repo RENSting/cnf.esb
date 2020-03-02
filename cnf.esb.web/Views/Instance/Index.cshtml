@@ -6,6 +6,8 @@
 }
 
 <h3>API服务调用实例清单</h3>
+@if(ViewBag.ServiceMode == null || ViewBag.ServiceMode == false)
+{
 <form asp-action="Index" method="GET" class="form-inline py-2">
     <div class="form-grou mr-2">
         <select name="consumer" class="form-control form-control-sm">
@@ -55,7 +57,7 @@
         <input type="submit" class="btn btn-sm btn-success" value="筛选">
     </div>
 </form>
-
+}
 <table class="table table-sm">
     <thead>
         <tr>

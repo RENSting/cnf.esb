@@ -101,6 +101,7 @@ namespace cnf.esb.web.Controllers
                     .Include(i => i.Client)
                     .Include(i => i.Service)
                     .Include(i => i.InstanceMapping);
+            ViewBag.ServiceMode = true;
             return View(nameof(Index), InstanceViewModel.ConvertFrom(await instances.ToListAsync()));
         }
 
