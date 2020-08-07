@@ -204,6 +204,8 @@ namespace cnf.esb.web.Models
 
             var client = new RestClient(fullUrl);
             var request = new RestRequest(Method.POST);
+            request.Timeout = 1800000;   //1800秒=30分钟
+            request.ReadWriteTimeout = 1800000; //1800秒=30分钟
             if (fullUrl.StartsWith("https", StringComparison.OrdinalIgnoreCase))
             {
                 client.RemoteCertificateValidationCallback = (s, c, e, t) => true;

@@ -42,7 +42,7 @@ namespace cnf.esb.web
                     {
                         options.LoginPath = "/Home/Login";
                         options.LogoutPath = "/Home/Logout";
-                        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+                        options.ExpireTimeSpan = TimeSpan.FromMinutes(300);
                         options.SlidingExpiration = true;
                         options.Cookie.HttpOnly = true;
                     });
