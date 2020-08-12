@@ -249,6 +249,12 @@ namespace cnf.esb.web.Controllers
                 TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, viewModel);
                 return RedirectToAction(nameof(EditNCWebService));
             }
+            else if(service.Type == ServiceType.PrimetonWebService)
+            {
+                var viewModel = PrimetonDescriptorViewModel.CreateFrom(service);
+                TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, viewModel);
+                return RedirectToAction(nameof(EditPrimetonService));
+            }
             else
             {
                 throw new Exception($"Not yet impletement API of type:{service.Type.ToString()}");

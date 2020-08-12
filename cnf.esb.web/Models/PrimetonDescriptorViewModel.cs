@@ -63,6 +63,7 @@ namespace cnf.esb.web.Models
         /// Literal Output Name, 并非必要
         /// </summary>
         /// <value></value>
+        [Display(Name="输出参数")]
         public string OutputName { get; set; }
 
         /// <summary>

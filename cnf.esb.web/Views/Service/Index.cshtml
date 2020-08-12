@@ -116,6 +116,19 @@
                     }
                     @Html.DisplayFor(m=>descriptor, "NCDescriptorInline", "", null)
                 }
+                else if(item.Type == ServiceType.PrimetonWebService)
+                {
+                    PrimetonDescriptorViewModel descriptor;
+                    if(string.IsNullOrWhiteSpace(item.ServiceDescriptor))
+                    {
+                        descriptor = null;
+                    }
+                    else
+                    {
+                        descriptor = JsonConvert.DeserializeObject<PrimetonDescriptorViewModel>(item.ServiceDescriptor);
+                    }
+                    @Html.DisplayFor(m=>descriptor, "PrimetonDescriptorInline", "", null);
+                }
                 else
                 {
                     @: NOT IMP. YET

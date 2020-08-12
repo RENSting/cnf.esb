@@ -1,0 +1,29 @@
+@model cnf.esb.web.Models.PrimetonDescriptorViewModel
+
+@if(Model == null || !Model.IsDefined)
+{
+    <span class="badge badge-warning">
+        尚未定义
+    </span>
+}
+else
+{
+    if(!string.IsNullOrWhiteSpace(Model.ServiceAddress))
+    {
+        var fullUrl = Model.ServiceAddress.TrimEnd(' ', '/') + "/" + Model.Operation;
+        <span class="badge badge-default">Primeton:Soap11</span>
+        <span class="badge badge-secondary">
+            @fullUrl
+        </span>
+    }
+    if(Model.InputBody != null)
+    {
+        @Html.DisplayFor(m=>m.InputBody, "JsonTemplateInline", "", null)
+    }
+    else
+    {
+        <span class="badge badge-warning">
+            尚未定义
+        </span>
+    }
+}
