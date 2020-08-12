@@ -21,6 +21,8 @@ namespace cnf.esb.web.Controllers
         public const string STATE_RESTRETURN_ERROR = "ReturnJsonError";
         public const string STATE_NCPARAMETER_ERROR = "NCParameterError";
         public const string STATE_NCRETURN_ERROR = "NCReturnError";
+        public const string STATE_PRIMETON_PARAMETER_ERROR = "PrimetonParameterError";
+        public const string STATE_PRIMETON_RETURN_ERROR = "PrimetonReturnError";
         public const string EDIT_JSON_CROSS_ACTION_DATA_KEY = "CrossActionJson";
         public const string EDIT_SERVICE_CROSS_ACTION_DATA_KEY = "CrossActionService";
 
@@ -36,14 +38,14 @@ namespace cnf.esb.web.Controllers
         public async Task<IActionResult> Index(string groupName, string name)
         {
             var groups = from svc in _esbModelContext.Services
-                        select svc.GroupName;
-            
+                         select svc.GroupName;
+
             var services = from s in _esbModelContext.Services
-                        where (string.IsNullOrWhiteSpace(groupName)
-                            || s.GroupName.Contains(groupName, StringComparison.OrdinalIgnoreCase)
-                        ) && (string.IsNullOrWhiteSpace(name)
-                            || s.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
-                        select s;
+                           where (string.IsNullOrWhiteSpace(groupName)
+                               || s.GroupName.Contains(groupName, StringComparison.OrdinalIgnoreCase)
+                           ) && (string.IsNullOrWhiteSpace(name)
+                               || s.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
+                           select s;
             ViewBag.Name = name;
             ViewBag.SelectedGroup = groupName;
             ViewBag.Groups = await groups.Distinct().ToListAsync();
@@ -123,13 +125,17 @@ namespace cnf.esb.web.Controllers
             where T : IServiceDescriptorViewModel
         {
             IServiceDescriptorViewModel savedViewModel;
-            if(uiViewModel.ServiceType == ServiceType.NCWebService)
+            if (uiViewModel.ServiceType == ServiceType.NCWebService)
             {
                 savedViewModel = JsonConvert.DeserializeObject<NCDescriptorViewModel>(savedViewModelJson);
             }
-            else if(uiViewModel.ServiceType == ServiceType.SimpleRESTful)
+            else if (uiViewModel.ServiceType == ServiceType.SimpleRESTful)
             {
                 savedViewModel = JsonConvert.DeserializeObject<SimpleRestfulDescriptorViewModel>(savedViewModelJson);
+            }
+            else if (uiViewModel.ServiceType == ServiceType.PrimetonWebService)
+            {
+                savedViewModel = JsonConvert.DeserializeObject<PrimetonDescriptorViewModel>(savedViewModelJson);
             }
             else
             {
@@ -182,6 +188,25 @@ namespace cnf.esb.web.Controllers
             if (TempData.ContainsKey(STATE_NCRETURN_ERROR))
             {
                 ViewData[STATE_NCRETURN_ERROR] = TempData[STATE_NCRETURN_ERROR];
+            }
+            return View(viewModel);
+        }
+
+        public IActionResult EditPrimetonService()
+        {
+            if (TempData[EDIT_SERVICE_CROSS_ACTION_DATA_KEY] == null)
+            {
+                throw new Exception("页面只能被内部访问，无法直接调用");
+            }
+            var viewModel = TempData.Get<PrimetonDescriptorViewModel>(EDIT_SERVICE_CROSS_ACTION_DATA_KEY);
+
+            if (TempData.ContainsKey(STATE_PRIMETON_PARAMETER_ERROR))
+            {
+                ViewData[STATE_PRIMETON_PARAMETER_ERROR] = TempData[STATE_PRIMETON_PARAMETER_ERROR];
+            }
+            if (TempData.ContainsKey(STATE_PRIMETON_RETURN_ERROR))
+            {
+                ViewData[STATE_PRIMETON_RETURN_ERROR] = TempData[STATE_PRIMETON_RETURN_ERROR];
             }
             return View(viewModel);
         }
@@ -267,7 +292,6 @@ namespace cnf.esb.web.Controllers
 
         #region NC service definition
 
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult EditNCParameter(NCDescriptorViewModel viewModel, string serviceJson)
@@ -300,6 +324,46 @@ namespace cnf.esb.web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveNCWebService(NCDescriptorViewModel viewModel, string serviceJson)
+        {
+            return await SaveServiceAction(viewModel, serviceJson);
+        }
+
+        #endregion
+
+        #region Primeton service definition
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EditPrimetonParameter(PrimetonDescriptorViewModel viewModel, string serviceJson)
+        {
+            return EditJsonAction(JsonTemplateNames.PrimetonParameter, viewModel, serviceJson);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeletePrimetonParameter(PrimetonDescriptorViewModel viewModel, string serviceJson)
+        {
+            return DeleteJsonAction(JsonTemplateNames.PrimetonParameter, viewModel, serviceJson);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult EditPrimetonReturn(PrimetonDescriptorViewModel viewModel, string serviceJson)
+        {
+            return EditJsonAction(JsonTemplateNames.PrimetonReturn, viewModel, serviceJson);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeletePrimetonReturn(PrimetonDescriptorViewModel viewModel, string serviceJson)
+        {
+            return DeleteJsonAction(JsonTemplateNames.PrimetonReturn, viewModel, serviceJson);
+        }
+
+        // REST: save the service
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SavePrimetonService(PrimetonDescriptorViewModel viewModel, string serviceJson)
         {
             return await SaveServiceAction(viewModel, serviceJson);
         }
@@ -431,6 +495,9 @@ namespace cnf.esb.web.Controllers
                 case JsonTemplateNames.NCParameter:
                 case JsonTemplateNames.NCReturn:
                     return ServiceType.NCWebService;
+                case JsonTemplateNames.PrimetonParameter:
+                case JsonTemplateNames.PrimetonReturn:
+                    return ServiceType.PrimetonWebService;
                 default:
                     throw new Exception("not impleted json part.");
             }
@@ -448,6 +515,10 @@ namespace cnf.esb.web.Controllers
             {
                 serviceViewName = nameof(EditSimpleRestfulService);
             }
+            else if(originalViewModel.ServiceType == ServiceType.PrimetonWebService)
+            {
+                serviceViewName = nameof(EditPrimetonService);
+            }
             else
             {
                 throw new Exception("not implemented");
@@ -459,6 +530,14 @@ namespace cnf.esb.web.Controllers
             else if (partName == JsonTemplateNames.NCReturn)
             {
                 ((NCDescriptorViewModel)originalViewModel).ReturnBody = null;
+            }
+            else if(partName == JsonTemplateNames.PrimetonParameter)
+            {
+                ((PrimetonDescriptorViewModel)originalViewModel).InputBody = null;
+            }
+            else if(partName == JsonTemplateNames.PrimetonReturn)
+            {
+                ((PrimetonDescriptorViewModel)originalViewModel).ReturnBody = null;
             }
             else if (partName == JsonTemplateNames.RESTParameter)
             {
@@ -476,6 +555,8 @@ namespace cnf.esb.web.Controllers
         IActionResult EditJsonAction(JsonTemplateNames partName, IServiceDescriptorViewModel viewModel, string serviceJson)
         {
             IServiceDescriptorViewModel originalViewModel = RestoreAndUpdateService(viewModel, serviceJson);
+
+            #region 为要编辑的对象设置默认值（初始化JSON模板并设置初始数据类型）
             //string errorKey = "";
             if (partName == JsonTemplateNames.NCParameter)
             {
@@ -493,6 +574,24 @@ namespace cnf.esb.web.Controllers
                 {
                     ((NCDescriptorViewModel)originalViewModel).ReturnBody = new JsonTemplate();
                     ((NCDescriptorViewModel)originalViewModel).ReturnBody.ValueType = Models.ValueType.Object;
+                }
+            }
+            else if (partName == JsonTemplateNames.PrimetonParameter)
+            {
+                //errorKey = STATE_PRIMETON_PARAMETER_ERROR;
+                if(((PrimetonDescriptorViewModel)originalViewModel).InputBody == null)
+                {
+                    ((PrimetonDescriptorViewModel)originalViewModel).InputBody = new JsonTemplate();
+                    ((PrimetonDescriptorViewModel)originalViewModel).InputBody.ValueType = Models.ValueType.Object;
+                }
+            }
+            else if(partName == JsonTemplateNames.PrimetonReturn)
+            {
+                //errorKey = STATE_PRIMETON_RETURN_ERROR;
+                if(((PrimetonDescriptorViewModel)originalViewModel).ReturnBody == null)
+                {
+                    ((PrimetonDescriptorViewModel)originalViewModel).ReturnBody = new JsonTemplate();
+                    ((PrimetonDescriptorViewModel)originalViewModel).ReturnBody.ValueType = Models.ValueType.Object;
                 }
             }
             else if (partName == JsonTemplateNames.RESTParameter)
@@ -513,6 +612,8 @@ namespace cnf.esb.web.Controllers
                     ((SimpleRestfulDescriptorViewModel)originalViewModel).ReturnJsonTemplate.ValueType = Models.ValueType.Integer;
                 }
             }
+            #endregion
+            
             EditServiceJson postedJson;
             if (originalViewModel.ServiceType == ServiceType.NCWebService)
             {
@@ -521,6 +622,10 @@ namespace cnf.esb.web.Controllers
             else if (originalViewModel.ServiceType == ServiceType.SimpleRESTful)
             {
                 postedJson = Models.EditServiceJson.CreateFrom((SimpleRestfulDescriptorViewModel)originalViewModel, partName);
+            }
+            else if(originalViewModel.ServiceType == ServiceType.PrimetonWebService)
+            {
+                postedJson = Models.EditServiceJson.CreateFrom((PrimetonDescriptorViewModel)originalViewModel, partName);
             }
             else
             {

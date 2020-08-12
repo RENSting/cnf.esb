@@ -46,16 +46,28 @@ namespace cnf.esb.web.Models
         }
     }
 
+    /// <summary>
+    /// 在打开Json编辑器时，用于指示编辑器正在编辑的对象。用来正确地返回和更新容器中的JSON
+    /// </summary>
     public enum JsonTemplateNames
     {
         [Display(Name="RESTful-API参数")]
         RESTParameter,
+
         [Display(Name="RESTful-API返回值")]
         RESTReturnValue,
+
         [Display(Name="NC-API参数")]
         NCParameter,
+
         [Display(Name="NC-API返回值")]
         NCReturn,
+
+        [Display(Name="Primeton-API参数")]
+        PrimetonParameter,
+        
+        [Display(Name="Primeton-API返回值")]
+        PrimetonReturn,
     }
 
     /// <summary>
@@ -198,6 +210,10 @@ namespace cnf.esb.web.Models
             {
                 return EditServiceJson.CreateFrom(NCDescriptorViewModel.CreateFrom(service), partName);
             }
+            else if(service.Type == ServiceType.PrimetonWebService)
+            {
+                return EditServiceJson.CreateFrom(PrimetonDescriptorViewModel.CreateFrom(service), partName);
+            }
             else
             {
                 throw new Exception("not impleted service type");
@@ -257,6 +273,29 @@ namespace cnf.esb.web.Models
                     break;
                 default:
                     throw new Exception("传入了非NC系统Web服务类型的部位参数"+ partName.ToString());
+            }
+            
+            return serviceJson;
+        }
+
+        public static EditServiceJson CreateFrom(PrimetonDescriptorViewModel model, JsonTemplateNames partName)
+        {
+            var serviceJson = new EditServiceJson
+            {
+                ServiceDescriptor = JsonConvert.SerializeObject(model),
+                CurrentPath = "",
+                CurrentName = partName
+            };
+            switch (partName)
+            {
+                case JsonTemplateNames.PrimetonParameter:
+                    serviceJson.CurrentJson = JsonConvert.SerializeObject(model.InputBody);
+                    break;
+                case JsonTemplateNames.PrimetonReturn:
+                    serviceJson.CurrentJson = JsonConvert.SerializeObject(model.ReturnBody);
+                    break;
+                default:
+                    throw new Exception("传入了非普元系统Web服务类型的部位参数"+ partName.ToString());
             }
             
             return serviceJson;

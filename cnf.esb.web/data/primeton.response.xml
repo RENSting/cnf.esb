@@ -1,0 +1,14 @@
+<soapenv:Envelope
+    xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+    <soapenv:Body>
+        <_tns_:saveContractServiceResponse
+            xmlns:_tns_="http://www.primeton.com/ProjectInfoManService">
+            <ns1:flag xsi:nil="true"
+                xmlns:ns1="http://www.primeton.com/ProjectInfoManService"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+            <ns1:msg xsi:nil="true"
+                xmlns:ns1="http://www.primeton.com/ProjectInfoManService"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+        </_tns_:saveContractServiceResponse>
+    </soapenv:Body>
+</soapenv:Envelope>

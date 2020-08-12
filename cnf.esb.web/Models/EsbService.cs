@@ -103,6 +103,11 @@ namespace cnf.esb.web.Models
         SimpleRESTful,
         [Display(Name = "用友NC系统Web服务")]
         NCWebService,
+        /// <summary>
+        /// 普元WebService
+        /// </summary>
+        [Display(Name="股份普元Web服务")]
+        PrimetonWebService,
     }
 
     [Table("EsbService")]

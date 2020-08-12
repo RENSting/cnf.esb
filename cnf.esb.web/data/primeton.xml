@@ -1,0 +1,38 @@
+<wsdl:definitions
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+    xmlns:tns="http://www.primeton.com/ProjectInfoManService"
+    xmlns:ns0="http://www.primeton.com/ProjectInfoManService"
+    xmlns:soap11="http://schemas.xmlsoap.org/wsdl/soap/" 
+    name="com.primeton.eos.cnnc.ProjectInfoManComposite.ProjectInfoManComponent.ProjectInfoManService" 
+    targetNamespace="http://www.primeton.com/ProjectInfoManService">
+    <wsdl:import 
+        namespace="http://www.primeton.com/ProjectInfoManService" 
+        location="/default/ProjectInfoManService?wsdl=com/primeton/eos/cnnc/ProjectInfoMan.wsdl">
+    </wsdl:import>
+    <wsdl:binding name="ProjectInfoManServiceBinding" type="tns:ProjectInfoManService">
+        <soap11:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="insertProjectService">
+            <soap11:operation soapAction=""/>
+            <wsdl:input name="insertProjectService">
+                <soap11:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="insertProjectServiceResponse">
+                <soap11:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="saveContractService">
+            <soap11:operation soapAction=""/>
+            <wsdl:input name="saveContractService">
+                <soap11:body use="literal"/>
+            </wsdl:input>
+            <wsdl:output name="saveContractServiceResponse">
+                <soap11:body use="literal"/>
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="ProjectInfoManServiceService">
+        <wsdl:port name="ProjectInfoManServicePort" binding="tns:ProjectInfoManServiceBinding">
+            <soap11:address location="http://10.255.30.4:8080/default/ProjectInfoManService"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

@@ -1,0 +1,139 @@
+@model cnf.esb.web.Models.PrimetonDescriptorViewModel
+
+@{
+    ViewData["Title"]="Primeton-API";
+    ViewBag.ServiceJson = Newtonsoft.Json.JsonConvert.SerializeObject(Model);
+}
+
+<div class="page-header">
+    <h4>股份普元系统Web服务定义</h4>
+    <p class="text-muted small">
+        股份普元系统使用特定的Web Service格式，它要求一个的XML作为Soap1.1 Body输入，并在执行完成后返回一个XML。
+        ESB封装了股份普元的SOAP1.1包，客户程序仅需要按照此处定义的JSON发送参数，并且按照此处定义的JSON处理返回值即可。
+    </p>
+</div>
+<form role="form" method="post">
+    <input type="hidden" name="ServiceJson" id="ServiceJson" value="@ViewBag.ServiceJson"/>        
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="card">
+        <div class="card-body p-2">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="form-group my-0">
+                        <label asp-for="ServiceName" class="col-form-label col-form-label-sm"></label>
+                        <input asp-for="ServiceName" class="form-control form-control-sm" placeholder="给服务定义一个友好名称">
+                        <span asp-validation-for="ServiceName" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check">
+                        <input asp-for="ActiveStatus" class="form-check-input" /> 
+                        <label class="form-check-label" asp-for="ActiveStatus"></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card mt-2">
+        <div class="card-body p-2">
+            <div class="row">
+                <div class="form-group col-md-8 my-0">
+                    <label asp-for="ServiceAddress" class="col-form-label col-form-label-sm"></label>
+                    <input class="form-control form-control-sm" placeholder="请输入服务基址URL（不包括方法名）"
+                        asp-for="ServiceAddress">
+                    <span asp-validation-for="ServiceAddress" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-4 my-0">
+                    <label asp-for="Operation" class="col-form-label col-form-label-sm"></label>
+                    <input class="form-control form-control-sm" placeholder="API对应的操作方法，必须输入"
+                        asp-for="Operation">
+                    <span asp-validation-for="Operation" class="text-danger"></span>
+                </div>
+            </div>
+            <p class="text-muted small mb-0">
+                服务基地址URL是普元提供的不包括方法名的API调用路径，是标准的SOAP1.1服务定义中的PORT的Location。<br/>
+                操作方法是API的方法名，它将拼接在URL的末尾作为SOAP包的发送地址。
+            </p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mt-2">
+                <div class="card-header">
+                    <h6>Soap包的Body定义（将其作为一个JSON对象）</h6>
+                </div>
+                <div class="card-body">
+                    @if(!string.IsNullOrWhiteSpace(ViewData["PrimetonParameterError"]?.ToString()))
+                    {
+                        <div class="alert alert-danger">
+                            @ViewData["PrimetonParameterError"]
+                        </div>
+                    }
+                    <div class="row">
+                        <div class="form-group my-0">
+                            <label asp-for="InputName" class="col-form-label col-form-label-sm"></label>
+                            <input class="form-control form-control-sm" placeholder="输入参数名称（Soap Operation's Input[name]）"
+                                asp-for="InputName">
+                            <span asp-validation-for="InputName" class="text-danger"></span>
+                        </div>
+                    </div>
+                    @if(Model.InputBody != null){@Html.DisplayFor(m=>m.InputBody)}
+                    <div class="mt-2">
+                        <button asp-action="EditPrimetonParameter" 
+                            class="btn btn-sm btn-info ml-2">定义参数模板</button>
+                    @if(Model.InputBody != null)
+                    {
+                        <button asp-action="DeletePrimeronParameter" 
+                            class="btn btn-sm btn-danger ml-2"
+                            onclick="if(confirm('删除参数模板是不可恢复的，请问确定要删除此模板吗？')==false)return false;">删除参数模板</button>
+                    }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mt-2">
+                <div class="card-header">
+                    <h6>服务返回Soap包</h6>
+                </div>
+                <div class="card-body">
+                    @if(!string.IsNullOrWhiteSpace(ViewData["PrimetonReturnError"]?.ToString()))
+                    {
+                        <div class="alert alert-danger">
+                            @ViewData["PrimetonReturnError"]
+                        </div>
+                    }
+                    <div class="row">
+                        <div class="form-group my-0">
+                            <label asp-for="OutputName" class="col-form-label col-form-label-sm"></label>
+                            <input class="form-control form-control-sm" placeholder="输出参数名称（Soap Operation's Output[name]）"
+                                asp-for="OutputName">
+                            <span asp-validation-for="OutputName" class="text-danger"></span>
+                        </div>
+                    </div>
+                    @if(Model.ReturnBody != null){@Html.DisplayFor(m=>m.ReturnBody)}
+                    <div class="mt-2">
+                        <button asp-action="EditPrimetonReturn"
+                            class="btn btn-sm btn-info ml-2">定义返回值模板</button>
+                    @if(Model.ReturnBody != null)
+                    {
+                        <button asp-action="DeletePrimetonReturn" 
+                            class="btn btn-sm btn-danger ml-2"
+                            onclick="if(confirm('删除返回值模板定义是不可恢复的，请问确定要删除此模板吗？')==false)return false;">删除返回值模板</button>
+                    }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-2">
+        <button class="btn btn-primary btn-lg" asp-action="SavePrimetonService">保存并返回</button>
+        <a asp-action="Index" 
+            onclick="if(confirm('直接返回列表将丢弃本次管理活动尚未保存的全部修改，确实要返回吗？')==false)return false;" 
+            class="btn btn-default">返回注册服务列表</a>
+    </div>
+</form>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
