@@ -133,7 +133,7 @@ namespace cnf.esb.web.Controllers
             {
                 savedViewModel = JsonConvert.DeserializeObject<SimpleRestfulDescriptorViewModel>(savedViewModelJson);
             }
-            else if (uiViewModel.ServiceType == ServiceType.PrimetonWebService)
+            else if (uiViewModel.ServiceType == ServiceType.PrimetonService)
             {
                 savedViewModel = JsonConvert.DeserializeObject<PrimetonDescriptorViewModel>(savedViewModelJson);
             }
@@ -249,7 +249,7 @@ namespace cnf.esb.web.Controllers
                 TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, viewModel);
                 return RedirectToAction(nameof(EditNCWebService));
             }
-            else if(service.Type == ServiceType.PrimetonWebService)
+            else if(service.Type == ServiceType.PrimetonService)
             {
                 var viewModel = PrimetonDescriptorViewModel.CreateFrom(service);
                 TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, viewModel);
@@ -503,7 +503,7 @@ namespace cnf.esb.web.Controllers
                     return ServiceType.NCWebService;
                 case JsonTemplateNames.PrimetonParameter:
                 case JsonTemplateNames.PrimetonReturn:
-                    return ServiceType.PrimetonWebService;
+                    return ServiceType.PrimetonService;
                 default:
                     throw new Exception("not impleted json part.");
             }
@@ -521,7 +521,7 @@ namespace cnf.esb.web.Controllers
             {
                 serviceViewName = nameof(EditSimpleRestfulService);
             }
-            else if(originalViewModel.ServiceType == ServiceType.PrimetonWebService)
+            else if(originalViewModel.ServiceType == ServiceType.PrimetonService)
             {
                 serviceViewName = nameof(EditPrimetonService);
             }
@@ -629,7 +629,7 @@ namespace cnf.esb.web.Controllers
             {
                 postedJson = Models.EditServiceJson.CreateFrom((SimpleRestfulDescriptorViewModel)originalViewModel, partName);
             }
-            else if(originalViewModel.ServiceType == ServiceType.PrimetonWebService)
+            else if(originalViewModel.ServiceType == ServiceType.PrimetonService)
             {
                 postedJson = Models.EditServiceJson.CreateFrom((PrimetonDescriptorViewModel)originalViewModel, partName);
             }
@@ -844,6 +844,14 @@ namespace cnf.esb.web.Controllers
                             crossActionData.CurrentJson = JsonConvert.SerializeObject(
                                 ((NCDescriptorViewModel)wholeDescriptor).ReturnBody);
                             break;
+                        case JsonTemplateNames.PrimetonParameter:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((PrimetonDescriptorViewModel)wholeDescriptor).InputBody);
+                            break;
+                        case JsonTemplateNames.PrimetonReturn:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((PrimetonDescriptorViewModel)wholeDescriptor).ReturnBody);
+                            break;
                         default:
                             throw new Exception("not implemented json part for this service");
                     }
@@ -874,6 +882,16 @@ namespace cnf.esb.web.Controllers
                                 ((NCDescriptorViewModel)wholeDescriptor)
                                 .ReturnBody.FindTemplate(crossActionData.CurrentPath));
                             break;
+                        case JsonTemplateNames.PrimetonParameter:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((PrimetonDescriptorViewModel)wholeDescriptor)
+                                .InputBody.FindTemplate(crossActionData.CurrentPath));
+                            break;
+                        case JsonTemplateNames.PrimetonReturn:
+                            crossActionData.CurrentJson = JsonConvert.SerializeObject(
+                                ((PrimetonDescriptorViewModel)wholeDescriptor)
+                                .ReturnBody.FindTemplate(crossActionData.CurrentPath));
+                            break;
                         default:
                             throw new Exception("not implemented json part for this service");
                     }
@@ -901,6 +919,11 @@ namespace cnf.esb.web.Controllers
             {
                 TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, serviceDescriptor);
                 return RedirectToAction(nameof(EditNCWebService));
+            }
+            else if(crossActionData.ServiceType == ServiceType.PrimetonService)
+            {
+                TempData.Put(EDIT_SERVICE_CROSS_ACTION_DATA_KEY, serviceDescriptor);
+                return RedirectToAction(nameof(EditPrimetonService));
             }
             else
             {

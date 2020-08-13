@@ -107,7 +107,7 @@ namespace cnf.esb.web.Models
         /// 普元WebService
         /// </summary>
         [Display(Name="股份普元Web服务")]
-        PrimetonWebService,
+        PrimetonService,
     }
 
     [Table("EsbService")]

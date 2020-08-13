@@ -87,6 +87,9 @@ namespace cnf.esb.web.Models
                     case JsonTemplateNames.NCParameter:
                     case JsonTemplateNames.NCReturn:
                         return ServiceType.NCWebService;
+                    case JsonTemplateNames.PrimetonParameter:
+                    case JsonTemplateNames.PrimetonReturn:
+                        return ServiceType.PrimetonService;
                     default:
                         throw new Exception("not impleted json part.");
                 }
@@ -134,6 +137,10 @@ namespace cnf.esb.web.Models
             else if(ServiceType == ServiceType.NCWebService)
             {
                 return JsonConvert.DeserializeObject<NCDescriptorViewModel>(ServiceDescriptor);
+            }
+            else if(ServiceType == ServiceType.PrimetonService)
+            {
+                return JsonConvert.DeserializeObject<PrimetonDescriptorViewModel>(ServiceDescriptor);
             }
             else
             {
@@ -194,6 +201,26 @@ namespace cnf.esb.web.Models
                         ((NCDescriptorViewModel)originDescriptor).ReturnBody.ReplaceWith(CurrentPath, originCurrent);
                     }
                     break;
+                case JsonTemplateNames.PrimetonParameter:
+                    if (string.IsNullOrWhiteSpace(CurrentPath))
+                    {
+                        ((PrimetonDescriptorViewModel)originDescriptor).InputBody = originCurrent;
+                    }
+                    else
+                    {
+                        ((PrimetonDescriptorViewModel)originDescriptor).InputBody.ReplaceWith(CurrentPath, originCurrent);
+                    }
+                    break;
+                case JsonTemplateNames.PrimetonReturn:
+                    if (string.IsNullOrWhiteSpace(CurrentPath))
+                    {
+                        ((PrimetonDescriptorViewModel)originDescriptor).ReturnBody = originCurrent;
+                    }
+                    else
+                    {
+                        ((PrimetonDescriptorViewModel)originDescriptor).ReturnBody.ReplaceWith(CurrentPath, originCurrent);
+                    }
+                    break;
                 default:
                     throw new Exception("没有在该部位实现JSON模板");
             }
@@ -210,7 +237,7 @@ namespace cnf.esb.web.Models
             {
                 return EditServiceJson.CreateFrom(NCDescriptorViewModel.CreateFrom(service), partName);
             }
-            else if(service.Type == ServiceType.PrimetonWebService)
+            else if(service.Type == ServiceType.PrimetonService)
             {
                 return EditServiceJson.CreateFrom(PrimetonDescriptorViewModel.CreateFrom(service), partName);
             }

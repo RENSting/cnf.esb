@@ -113,9 +113,14 @@ namespace cnf.esb.web.Controllers
                 api = NCDescriptorViewModel.CreateFrom(instance.Service);
                 returnType = Models.SimpleRESTfulReturn.Json;
             }
+            else if(instance.Service.Type == ServiceType.PrimetonService)
+            {
+                api = PrimetonDescriptorViewModel.CreateFrom(instance.Service);
+                returnType = Models.SimpleRESTfulReturn.Json;
+            }
             else
             {
-                ViewBag.ErrorMessage = "尚未实现的服务协定";
+                ViewBag.ErrorMessage = $"尚未实现的服务协定类型：{instance.Service.Type}";
                 return View();
             }
             ViewBag.BodyExample = api.GetPostSample();
@@ -209,9 +214,13 @@ namespace cnf.esb.web.Controllers
                     {
                         api = NCDescriptorViewModel.CreateFrom(instance.Service);
                     }
+                    else if(instance.Service.Type == ServiceType.PrimetonService)
+                    {
+                        api = PrimetonDescriptorViewModel.CreateFrom(instance.Service);
+                    }
                     else
                     {
-                        throw new Exception("尚未实现的服务协定");
+                        throw new Exception($"尚未实现的服务协定:{instance.Service.Type}");
                     }
 
                     await LogInvoking(task, id, "", "API请求已就绪，正在发出...");

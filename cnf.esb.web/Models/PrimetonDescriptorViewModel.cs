@@ -14,7 +14,7 @@ namespace cnf.esb.web.Models
     public class PrimetonDescriptorViewModel : IServiceDescriptorViewModel
     {
         [JsonIgnore]
-        public ServiceType ServiceType { get { return ServiceType.PrimetonWebService; } }
+        public ServiceType ServiceType { get { return ServiceType.PrimetonService; } }
 
         #region 服务基本信息（用于在视图上显示信息）
         /// <summary>
@@ -120,7 +120,7 @@ namespace cnf.esb.web.Models
         /// <returns></returns>
         public static PrimetonDescriptorViewModel CreateFrom(EsbService service)
         {
-            if (service.Type != ServiceType.PrimetonWebService)
+            if (service.Type != ServiceType.PrimetonService)
                 throw new Exception("服务不是股份普元服务类型的。");
 
             var model = JsonConvert.DeserializeObject<PrimetonDescriptorViewModel>(service.ServiceDescriptor);
@@ -141,7 +141,7 @@ namespace cnf.esb.web.Models
         /// <param name="service"></param>
         public bool UpdateToService(ref EsbService service, out string error)
         {
-            if (service.Type != ServiceType.PrimetonWebService)
+            if (service.Type != ServiceType.PrimetonService)
                 throw new Exception("服务不是股份普元服务类型的。");
 
             service.Name = this.ServiceName;

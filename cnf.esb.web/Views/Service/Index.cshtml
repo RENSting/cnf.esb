@@ -116,7 +116,7 @@
                     }
                     @Html.DisplayFor(m=>descriptor, "NCDescriptorInline", "", null)
                 }
-                else if(item.Type == ServiceType.PrimetonWebService)
+                else if(item.Type == ServiceType.PrimetonService)
                 {
                     PrimetonDescriptorViewModel descriptor;
                     if(string.IsNullOrWhiteSpace(item.ServiceDescriptor))

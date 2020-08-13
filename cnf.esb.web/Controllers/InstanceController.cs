@@ -171,9 +171,21 @@ namespace cnf.esb.web.Controllers
                     descriptor.ParameterBody.GenerateMappingInto(viewModel.ParameterMappings, "", "");
                 }
             }
+            else if(service.Type == ServiceType.PrimetonService)
+            {
+                var descriptor = JsonConvert.DeserializeObject<PrimetonDescriptorViewModel>(service.ServiceDescriptor);
+                if(descriptor == null)
+                {
+                    throw new Exception($"选择的服务{service.Name}尚未定义服务协定");
+                }
+                if(descriptor.InputBody != null)
+                {
+                    descriptor.InputBody.GenerateMappingInto(viewModel.ParameterMappings, "", "");
+                }
+            }
             else
             {
-                throw new Exception("尚未实现除Simple RESTful外的其它服务类型");
+                throw new Exception("使用了尚未实现的服务类型");
             }
 
             TempData.Put(CROSS_VIEWMODEL_KEY, viewModel);
