@@ -13,6 +13,13 @@ namespace cnf.esb.web.Models
 {
     public class PrimetonDescriptorViewModel : IServiceDescriptorViewModel
     {
+        public PrimetonDescriptorViewModel()
+        {
+            InputBody = new JsonTemplate();
+            InputBody.ValueType = ValueType.Object;
+            InputBody.IsArray = false;
+        }
+
         [JsonIgnore]
         public ServiceType ServiceType { get { return ServiceType.PrimetonService; } }
 
@@ -46,25 +53,17 @@ namespace cnf.esb.web.Models
         [Required, RegularExpression("^[a-zA-Z_][a-zA-Z0-9_]*$"), Display(Name = "操作名称")]
         public string Operation { get; set; }
 
-        /// <summary>
-        /// Literal Input Name
-        /// </summary>
-        /// <value></value>
-        [Required, Display(Name="输入参数")]
-        public string InputName { get; set; }
+        [Required, Display(Name = "空间前缀")]
+        public string Prefix { get; set; }
+
+        [Required, Display(Name = "命名空间")]
+        public string Namespace { get; set; }
 
         /// <summary>
         /// 普元 web service要求的传入json对象参数模板定义
         /// </summary>
         /// <value></value>
         public JsonTemplate InputBody { get; set; }
-
-        /// <summary>
-        /// Literal Output Name, 并非必要
-        /// </summary>
-        /// <value></value>
-        [Display(Name="输出参数")]
-        public string OutputName { get; set; }
 
         /// <summary>
         /// 普元 web service返回的json对象的模板定义
@@ -84,7 +83,9 @@ namespace cnf.esb.web.Models
             get
             {
                 if (string.IsNullOrWhiteSpace(ServiceAddress)
-                    || string.IsNullOrWhiteSpace(Operation))
+                    || string.IsNullOrWhiteSpace(Operation)
+                    || string.IsNullOrWhiteSpace(Prefix)
+                    || string.IsNullOrWhiteSpace(Namespace))
                 {
                     return false;
                 }
@@ -109,8 +110,8 @@ namespace cnf.esb.web.Models
             this.Operation = viewModel.Operation;
             this.ServiceName = viewModel.ServiceName;
             this.ServiceAddress = viewModel.ServiceAddress;
-            this.InputName = viewModel.InputName;
-            this.OutputName = viewModel.OutputName;
+            this.Prefix = viewModel.Prefix;
+            this.Namespace = viewModel.Namespace;
         }
 
         /// <summary>
@@ -185,35 +186,87 @@ namespace cnf.esb.web.Models
             return returnJsonBuilder.ToString();
         }
 
-        public async System.Threading.Tasks.Task<RawResponse> GetResponse(JObject source)
-        {
-            string fullUrl = ServiceAddress.TrimEnd(new char[] { '/', ' ' });
-            StringBuilder bodyBuilder = new StringBuilder();
-            JToken requestJson = source.SelectToken("$.body");
-            //直接将客户发送来的body中的json作为SOAP Body传递，
-            // 不验证它与服务api定义的符合性。
-            //TODO: string data = requestJson?.ToString();
-                        
-            XNamespace proj = "http://www.primeton.com/ProjectInfoManService";
+        internal string generatePostXml(JObject requestBody)
+        {            
+            JToken soapBodyJson = requestBody.SelectToken("$.body");
+
+            XNamespace ns0 = Namespace;
             XNamespace soapenv = "http://schemas.xmlsoap.org/soap/envelope/";
+
+            XElement body = new XElement(soapenv + "Body");
+
+            if (soapBodyJson != null && soapBodyJson.Type == JTokenType.Object)
+            {
+                JObject parameters = (JObject)soapBodyJson;
+                foreach (var inputItem in parameters)
+                {
+                    /*/ {
+                            "insertProject": {
+                                "jsons": [{
+                                        "cmpCode": "111",
+                                        "cmpName": "Some"
+                                    },{
+                                        "cmpCode": "112",
+                                        "cmpName": "Time"
+                                    }
+                                ]
+                            }
+                        }
+                    */
+                    //lev 1: insertProject (Input Name == parameter name)
+                    XElement inputNode = new XElement(ns0 + inputItem.Key);
+                    if (inputItem.Value != null && inputItem.Value.Type == JTokenType.Object)
+                    {
+                        var inputObject = (JObject)inputItem.Value;
+                        foreach (var inputType in inputObject)
+                        {
+                            //lev 2: jsons (parameter type, 只能有一个属性就是好类型名称)
+                            //如果后面是数组，就生成一系列 <ns0:jsons>
+                            foreach (var typeObject in inputType.Value)
+                            {
+                                XElement typeNode = new XElement(ns0 + inputType.Key);
+                                if (typeObject != null && typeObject.Type == JTokenType.Object)
+                                {
+                                    foreach (var prop in (JObject)typeObject)
+                                    {
+                                        typeNode.Add(new XElement(prop.Key, prop.Value?.ToString()));
+                                    }
+                                }
+                                else
+                                {
+                                    typeNode.Value = typeObject?.ToString();
+                                }
+                                inputNode.Add(typeNode);
+                            }
+                        }
+                    }
+                    body.Add(inputNode);
+                }
+            }
+            else
+            {
+                body.Value = soapBodyJson?.ToString();
+            }
 
             var document = new XDocument(
                 new XDeclaration("1.0", "utf-8", null),
                 new XElement(soapenv + "Envelope",
-                    new XAttribute(XNamespace.Xmlns + "soapenv", soapenv.NamespaceName),
-                    new XAttribute(XNamespace.Xmlns + "proj", proj.NamespaceName),
-                    new XElement(soapenv + "Header"),
-                    new XElement(soapenv + "Body",
-                        new XElement(proj + InputName,
-                            new XElement(proj + "jsons", ""),
-                            new XElement(proj + "jsons", ""),
-                            new XElement(proj + "jsons", "")
-                        )
-                    )
-                )
-            );
-            
-            string postXml = document.Declaration + Environment.NewLine + document.ToString();
+                new XAttribute(XNamespace.Xmlns + "soapenv", soapenv.NamespaceName),
+                new XAttribute(XNamespace.Xmlns + Prefix, ns0.NamespaceName),
+                new XElement(soapenv + "Header"),
+                body));
+
+            return document.Declaration + Environment.NewLine + document.ToString();
+        }
+
+        public async System.Threading.Tasks.Task<RawResponse> GetResponse(JObject source)
+        {
+            string fullUrl = ServiceAddress.TrimEnd(new char[] { '/', ' ' });
+            StringBuilder bodyBuilder = new StringBuilder();
+            //直接将客户发送来的body中的json作为SOAP Body传递，
+            // 不验证它与服务api定义的符合性。
+
+            string postXml = generatePostXml(source);
 
             var client = new RestClient(fullUrl);
             var request = new RestRequest(Method.POST);
@@ -226,13 +279,13 @@ namespace cnf.esb.web.Models
             request.AddHeader("Content-Type", "application/xml");
             request.AddParameter("application/xml", postXml, ParameterType.RequestBody);
             IRestResponse response = await client.ExecuteAsync(request);
-            if(!response.IsSuccessful)
+            if (!response.IsSuccessful)
             {
-                if(response.ErrorException != null)
+                if (response.ErrorException != null)
                 {
                     throw response.ErrorException;
                 }
-                else if(!string.IsNullOrWhiteSpace(response.ErrorMessage))
+                else if (!string.IsNullOrWhiteSpace(response.ErrorMessage))
                 {
                     throw new Exception(response.ErrorMessage);
                 }
@@ -253,17 +306,17 @@ namespace cnf.esb.web.Models
         public bool CheckResponse(string rawResponse, out string apiResponse, out SimpleRESTfulReturn type)
         {
             XNamespace soap = "http://schemas.xmlsoap.org/soap/envelope/";
-            using(var reader = new StringReader(rawResponse))
+            using (var reader = new StringReader(rawResponse))
             {
                 XDocument document = XDocument.Load(reader);
                 var faultNode = (from e in document.Descendants(soap + "Fault")
-                                select e).SingleOrDefault();
-                if(faultNode == null)
+                                 select e).SingleOrDefault();
+                if (faultNode == null)
                 {
                     //no fault,
                     var returnNode = (from e in document.Descendants("return")
-                                        select e).SingleOrDefault();
-                    if(returnNode != null)
+                                      select e).SingleOrDefault();
+                    if (returnNode != null)
                     {
                         type = SimpleRESTfulReturn.Json;
                         apiResponse = returnNode.Value;

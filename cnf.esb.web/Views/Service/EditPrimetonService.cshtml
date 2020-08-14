@@ -17,38 +17,39 @@
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="card">
         <div class="card-body p-2">
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="form-group my-0">
-                        <label asp-for="ServiceName" class="col-form-label col-form-label-sm"></label>
-                        <input asp-for="ServiceName" class="form-control form-control-sm" placeholder="给服务定义一个友好名称">
-                        <span asp-validation-for="ServiceName" class="text-danger"></span>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-check">
-                        <input asp-for="ActiveStatus" class="form-check-input" /> 
-                        <label class="form-check-label" asp-for="ActiveStatus"></label>
-                    </div>
+            <div class="form-inline">
+                <label asp-for="ServiceName" class="form-label form-label-sm mr-2"></label>
+                <input asp-for="ServiceName" class="form-control form-control-sm" 
+                    placeholder="给服务定义一个友好名称" style="width: 400px;">
+                <span asp-validation-for="ServiceName" class="text-danger"></span>
+                <div class="form-check ml-2">
+                    <input asp-for="ActiveStatus" class="form-check-input" /> 
+                    <label class="form-check-label" asp-for="ActiveStatus"></label>
                 </div>
             </div>
         </div>
     </div>
     <div class="card mt-2">
         <div class="card-body p-2">
-            <div class="row">
-                <div class="form-group col-md-8 my-0">
-                    <label asp-for="ServiceAddress" class="col-form-label col-form-label-sm"></label>
-                    <input class="form-control form-control-sm" placeholder="请输入服务基址URL（不包括方法名）"
-                        asp-for="ServiceAddress">
-                    <span asp-validation-for="ServiceAddress" class="text-danger"></span>
-                </div>
-                <div class="form-group col-md-4 my-0">
-                    <label asp-for="Operation" class="col-form-label col-form-label-sm"></label>
-                    <input class="form-control form-control-sm" placeholder="API对应的操作方法，必须输入"
-                        asp-for="Operation">
-                    <span asp-validation-for="Operation" class="text-danger"></span>
-                </div>
+            <div class="form-inline mb-2">
+                <label asp-for="ServiceAddress" class="form-label form-label-sm mr-2"></label>
+                <input class="form-control form-control-sm" placeholder="请输入服务基址URL（不包括方法名）"
+                    asp-for="ServiceAddress" style="width: 400px;">
+                <span asp-validation-for="ServiceAddress" class="text-danger"></span>
+                <label asp-for="Operation" class="form-label form-label-sm mx-2"></label>
+                <input class="form-control form-control-sm" placeholder="API对应的操作"
+                    asp-for="Operation">
+                <span asp-validation-for="Operation" class="text-danger"></span>
+            </div>
+            <div class="form-inline mb-2">
+                <label asp-for="Prefix" class="form-label form-label-sm mr-2"></label>
+                <input class="form-control form-control-sm" placeholder="命名空间前缀"
+                    asp-for="Prefix">
+                <span asp-validation-for="Prefix" class="text-danger"></span>
+                <label asp-for="Namespace" class="form-label form-label-sm mx-2"></label>
+                <input class="form-control form-control-sm" placeholder="普元API命名空间"
+                    asp-for="Namespace" style="width:400px;">
+                <span asp-validation-for="Namespace" class="text-danger"></span>
             </div>
             <p class="text-muted small mb-0">
                 服务基地址URL是普元提供的不包括方法名的API调用路径，是标准的SOAP1.1服务定义中的PORT的Location。<br/>
@@ -69,23 +70,17 @@
                             @ViewData["PrimetonParameterError"]
                         </div>
                     }
-                    <div class="form-inline">
-                        <label asp-for="InputName" class="form-label form-label-sm mr-2"></label>
-                        <input class="form-control form-control-sm" placeholder="输入参数名称（Soap Operation's Input[name]）"
-                            asp-for="InputName" style="width:350px;">
-                        <span asp-validation-for="InputName" class="text-danger"></span>
-                    </div>
                     @if(Model.InputBody != null){@Html.DisplayFor(m=>m.InputBody)}
                     <div class="mt-2">
                         <button asp-action="EditPrimetonParameter" 
                             class="btn btn-sm btn-info ml-2">定义参数模板</button>
-                    @if(Model.InputBody != null)
+@*                     @if(Model.InputBody != null)
                     {
                         <button asp-action="DeletePrimeronParameter" 
                             class="btn btn-sm btn-danger ml-2"
                             onclick="if(confirm('删除参数模板是不可恢复的，请问确定要删除此模板吗？')==false)return false;">删除参数模板</button>
                     }
-                    </div>
+ *@                    </div>
                 </div>
             </div>
         </div>
@@ -101,12 +96,6 @@
                             @ViewData["PrimetonReturnError"]
                         </div>
                     }
-                    <div class="form-inline">
-                        <label asp-for="OutputName" class="form-label form-label-sm mr-2"></label>
-                        <input class="form-control form-control-sm" placeholder="输出参数名称（Soap Operation's Output[name]）"
-                            asp-for="OutputName" style="width:350px;">
-                        <span asp-validation-for="OutputName" class="text-danger"></span>
-                    </div>
                     @if(Model.ReturnBody != null){@Html.DisplayFor(m=>m.ReturnBody)}
                     <div class="mt-2">
                         <button asp-action="EditPrimetonReturn"

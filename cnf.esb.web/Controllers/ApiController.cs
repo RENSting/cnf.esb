@@ -257,5 +257,50 @@ namespace cnf.esb.web.Controllers
                 }
             }
         }
+
+        [HttpPost]
+        [Route("api/Test/{id}")]
+        public async Task<ContentResult> TestInstance(int id)
+        {
+            var instance = await _esbModelContext.Instances.Where(i => i.ID == id)
+                    .Include(i => i.Client)
+                    .Include(i => i.Service).SingleOrDefaultAsync();
+            //        .Include(i => i.InstanceMapping).SingleAsync();
+            #region 检查API实例定义的有效性
+            if (instance == null || instance.ActiveStatus == 0)
+            {
+                return Content("ERROR: 指定的API调用实例不存在，或者已经被停用。");
+            }
+            if (instance.Service == null || instance.Service.ActiveStatus == 0)
+            {
+                return Content("ERROR: 请求的服务不存在，或者尚未启用");
+            }
+            #endregion
+
+            using (StreamReader reader = new StreamReader(Request.Body))
+            {
+                try
+                {
+                    //RequestBody request = JsonConvert.DeserializeObject<RequestBody>(await reader.ReadToEndAsync());
+                    JObject originalRequest = JObject.Parse(await reader.ReadToEndAsync());
+
+                    IServiceDescriptorViewModel api;
+                    if(instance.Service.Type == ServiceType.PrimetonService)
+                    {
+                        api = PrimetonDescriptorViewModel.CreateFrom(instance.Service);
+                    }
+                    else
+                    {
+                        throw new Exception($"服务协定:{instance.Service.Type}没有设计测试功能");
+                    }
+
+                    return Content(((PrimetonDescriptorViewModel)api).generatePostXml(originalRequest));
+                }
+                catch (Exception ex)
+                {
+                    return Content(ex.ToString());
+                }
+            }
+        }
     }
 }
