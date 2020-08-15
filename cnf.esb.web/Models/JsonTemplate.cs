@@ -33,10 +33,10 @@ namespace cnf.esb.web.Models
         /// </summary>
         public void WriteJsonBody(JsonWriter writer)
         {
-            if(IsArray)
+            if (IsArray)
             {
                 writer.WriteStartArray();
-                for(int i = 0; i < SAMPLE_ARRAY_LENGTH; i++)
+                for (int i = 0; i < SAMPLE_ARRAY_LENGTH; i++)
                 {
                     WriteJsonIgnoreArray(writer);
                 }
@@ -69,7 +69,7 @@ namespace cnf.esb.web.Models
                     break;
                 case Models.ValueType.Object:
                     writer.WriteStartObject();
-                    foreach(var property in ObjectProperties)
+                    foreach (var property in ObjectProperties)
                     {
                         writer.WritePropertyName(property.Key);
                         property.Value.WriteJsonBody(writer);
@@ -140,8 +140,8 @@ namespace cnf.esb.web.Models
 
         public void GenerateMappingInto(List<ParameterMapping> mappings, string parentPath, string parentPattern)
         {
-            if(string.IsNullOrWhiteSpace(parentPattern)) parentPattern = "(root)";
-            if(IsArray) parentPattern = parentPattern + "[]";
+            if (string.IsNullOrWhiteSpace(parentPattern)) parentPattern = "(root)";
+            if (IsArray) parentPattern = parentPattern + "[]";
 
             switch (ValueType)
             {
@@ -175,6 +175,9 @@ namespace cnf.esb.web.Models
         {
             ObjectProperties = new Dictionary<string, JsonTemplate>();
         }
+
+        public static JsonTemplate Create(ValueType jsonType, bool isArray) =>
+            new JsonTemplate { IsArray = isArray, ValueType = jsonType };
 
         [Display(Name = "JSON类型")]
         public ValueType ValueType { get; set; }

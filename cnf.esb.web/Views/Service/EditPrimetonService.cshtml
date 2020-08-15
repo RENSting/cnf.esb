@@ -87,7 +87,7 @@
         <div class="col-md-6">
             <div class="card mt-2">
                 <div class="card-header">
-                    <h6>服务返回Soap包</h6>
+                    <h6>服务返回（JSON对象）</h6>
                 </div>
                 <div class="card-body">
                     @if(!string.IsNullOrWhiteSpace(ViewData["PrimetonReturnError"]?.ToString()))
@@ -97,7 +97,7 @@
                         </div>
                     }
                     @if(Model.ReturnBody != null){@Html.DisplayFor(m=>m.ReturnBody)}
-                    <div class="mt-2">
+@*                     <div class="mt-2">
                         <button asp-action="EditPrimetonReturn"
                             class="btn btn-sm btn-info ml-2">定义返回值模板</button>
                     @if(Model.ReturnBody != null)
@@ -106,7 +106,7 @@
                             class="btn btn-sm btn-danger ml-2"
                             onclick="if(confirm('删除返回值模板定义是不可恢复的，请问确定要删除此模板吗？')==false)return false;">删除返回值模板</button>
                     }
-                    </div>
+ *@                    </div>
                 </div>
             </div>
         </div>

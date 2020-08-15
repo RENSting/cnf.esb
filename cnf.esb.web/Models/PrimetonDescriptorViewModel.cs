@@ -18,6 +18,12 @@ namespace cnf.esb.web.Models
             InputBody = new JsonTemplate();
             InputBody.ValueType = ValueType.Object;
             InputBody.IsArray = false;
+
+            ReturnBody = new JsonTemplate();
+            ReturnBody.ValueType = ValueType.Object;
+            ReturnBody.IsArray = false;
+            ReturnBody.ObjectProperties.Add("flag", JsonTemplate.Create(ValueType.String, false));
+            ReturnBody.ObjectProperties.Add("msg", JsonTemplate.Create(ValueType.String, false));
         }
 
         [JsonIgnore]
@@ -187,7 +193,7 @@ namespace cnf.esb.web.Models
         }
 
         internal string generatePostXml(JObject requestBody)
-        {            
+        {
             JToken soapBodyJson = requestBody.SelectToken("$.body");
 
             XNamespace ns0 = Namespace;
@@ -305,38 +311,51 @@ namespace cnf.esb.web.Models
 
         public bool CheckResponse(string rawResponse, out string apiResponse, out SimpleRESTfulReturn type)
         {
-            XNamespace soap = "http://schemas.xmlsoap.org/soap/envelope/";
-            using (var reader = new StringReader(rawResponse))
+            //XNamespace soap = "http://schemas.xmlsoap.org/soap/envelope/";
+            XNamespace ns1 = Namespace; //"http://www.primeton.com/ProjectInfoManService";
+            XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
+
+            #region comments a sample response
+            //              string data = @"
+            // <soapenv:Envelope
+            //     xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"">
+            //     <soapenv:Body>
+            //         <_tns_:saveContractServiceResponse
+            //             xmlns:_tns_=""http://www.primeton.com/ProjectInfoManService"">
+            //             <ns1:flag xsi:nil=""true""
+            //                 xmlns:ns1=""http://www.primeton.com/ProjectInfoManService""
+            //                 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""/>
+            //             <ns1:msg xsi:nil=""error message""
+            //                 xmlns:ns1=""http://www.primeton.com/ProjectInfoManService""
+            //                 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""/>
+            //         </_tns_:saveContractServiceResponse>
+            //     </soapenv:Body>
+            // </soapenv:Envelope>
+            //             ";
+            #endregion
+
+            var envelope = XElement.Parse(rawResponse);
+            var flag = envelope.Descendants(ns1 + "flag")
+                    .FirstOrDefault().Attribute(xsi + "nil").Value;
+            var msg = envelope.Descendants(ns1 + "msg")
+                    .FirstOrDefault().Attribute(xsi + "nil").Value;
+
+            StringBuilder returnJsonBuilder = new StringBuilder();
+            using (JsonWriter jwriter = new JsonTextWriter(new StringWriter(returnJsonBuilder)))
             {
-                XDocument document = XDocument.Load(reader);
-                var faultNode = (from e in document.Descendants(soap + "Fault")
-                                 select e).SingleOrDefault();
-                if (faultNode == null)
-                {
-                    //no fault,
-                    var returnNode = (from e in document.Descendants("return")
-                                      select e).SingleOrDefault();
-                    if (returnNode != null)
-                    {
-                        type = SimpleRESTfulReturn.Json;
-                        apiResponse = returnNode.Value;
-                        return true;
-                    }
-                    else
-                    {
-                        type = SimpleRESTfulReturn.PlainText;
-                        apiResponse = rawResponse;
-                        return false;
-                    }
-                }
-                else
-                {
-                    type = SimpleRESTfulReturn.PlainText;
-                    apiResponse = $"FaultCode={faultNode.Element("faultcode").Value},"
-                            + $"FaultString={faultNode.Element("faultstring").Value}";
-                    return false;
-                }
+                jwriter.Formatting = Formatting.Indented;
+                jwriter.WriteStartObject();
+                jwriter.WritePropertyName("flag");
+                jwriter.WriteValue(flag);
+                jwriter.WritePropertyName("msg");
+                jwriter.WriteValue(msg);
+                jwriter.WriteEndObject();
+                jwriter.Close();
             }
+
+            type = SimpleRESTfulReturn.Json;
+            apiResponse = returnJsonBuilder.ToString();
+            return true;
         }
     }
 }

@@ -352,7 +352,7 @@ namespace cnf.esb.web.Controllers
             return DeleteJsonAction(JsonTemplateNames.PrimetonParameter, viewModel, serviceJson);
         }
 
-        [HttpPost]
+/*         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult EditPrimetonReturn(PrimetonDescriptorViewModel viewModel, string serviceJson)
         {
@@ -365,7 +365,7 @@ namespace cnf.esb.web.Controllers
         {
             return DeleteJsonAction(JsonTemplateNames.PrimetonReturn, viewModel, serviceJson);
         }
-
+ */
         // REST: save the service
         [HttpPost]
         [ValidateAntiForgeryToken]
