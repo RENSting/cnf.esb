@@ -64,6 +64,13 @@
                     <h6>Soap包的Body定义（将其作为一个JSON对象）</h6>
                 </div>
                 <div class="card-body">
+                    <p class="text-muted small my-0">
+                        输入参数定位为一个JSON对象，请根据普元提供的XML示例认真分析后定义。
+                        从WSDL表分析：其中的Input节点应该作为JSON对象第一级属性，例如&lt;wsdl:input name='saveProjectService'&gt;
+                        则第一级属性为saveProjectService， 然后分析Soap包报文saveProjectService节点由&lt;proj:jsons&gt;构成，
+                        说明该input参数类型为jsons，由于出现了多个，因此它就是一个数组，因此将JSON第二级定义为一个属性名为jsons的对象数组。
+                        最后再根据jsons子节点定义第三级对象的属性清单。
+                    </p>
                     @if(!string.IsNullOrWhiteSpace(ViewData["PrimetonParameterError"]?.ToString()))
                     {
                         <div class="alert alert-danger">
@@ -74,13 +81,7 @@
                     <div class="mt-2">
                         <button asp-action="EditPrimetonParameter" 
                             class="btn btn-sm btn-info ml-2">定义参数模板</button>
-@*                     @if(Model.InputBody != null)
-                    {
-                        <button asp-action="DeletePrimeronParameter" 
-                            class="btn btn-sm btn-danger ml-2"
-                            onclick="if(confirm('删除参数模板是不可恢复的，请问确定要删除此模板吗？')==false)return false;">删除参数模板</button>
-                    }
- *@                    </div>
+                   </div>
                 </div>
             </div>
         </div>
@@ -97,16 +98,6 @@
                         </div>
                     }
                     @if(Model.ReturnBody != null){@Html.DisplayFor(m=>m.ReturnBody)}
-@*                     <div class="mt-2">
-                        <button asp-action="EditPrimetonReturn"
-                            class="btn btn-sm btn-info ml-2">定义返回值模板</button>
-                    @if(Model.ReturnBody != null)
-                    {
-                        <button asp-action="DeletePrimetonReturn" 
-                            class="btn btn-sm btn-danger ml-2"
-                            onclick="if(confirm('删除返回值模板定义是不可恢复的，请问确定要删除此模板吗？')==false)return false;">删除返回值模板</button>
-                    }
- *@                    </div>
                 </div>
             </div>
         </div>

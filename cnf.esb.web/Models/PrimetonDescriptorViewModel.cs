@@ -334,28 +334,36 @@ namespace cnf.esb.web.Models
             //             ";
             #endregion
 
-            var envelope = XElement.Parse(rawResponse);
-            var flag = envelope.Descendants(ns1 + "flag")
-                    .FirstOrDefault().Attribute(xsi + "nil").Value;
-            var msg = envelope.Descendants(ns1 + "msg")
-                    .FirstOrDefault().Attribute(xsi + "nil").Value;
-
-            StringBuilder returnJsonBuilder = new StringBuilder();
-            using (JsonWriter jwriter = new JsonTextWriter(new StringWriter(returnJsonBuilder)))
+            try
             {
-                jwriter.Formatting = Formatting.Indented;
-                jwriter.WriteStartObject();
-                jwriter.WritePropertyName("flag");
-                jwriter.WriteValue(flag);
-                jwriter.WritePropertyName("msg");
-                jwriter.WriteValue(msg);
-                jwriter.WriteEndObject();
-                jwriter.Close();
-            }
+                var envelope = XElement.Parse(rawResponse);
+                var flag = envelope.Descendants(ns1 + "flag")
+                        .FirstOrDefault().Attribute(xsi + "nil").Value;
+                var msg = envelope.Descendants(ns1 + "msg")
+                        .FirstOrDefault().Attribute(xsi + "nil").Value;
 
-            type = SimpleRESTfulReturn.Json;
-            apiResponse = returnJsonBuilder.ToString();
-            return true;
+                StringBuilder returnJsonBuilder = new StringBuilder();
+                using (JsonWriter jwriter = new JsonTextWriter(new StringWriter(returnJsonBuilder)))
+                {
+                    jwriter.Formatting = Formatting.Indented;
+                    jwriter.WriteStartObject();
+                    jwriter.WritePropertyName("flag");
+                    jwriter.WriteValue(flag);
+                    jwriter.WritePropertyName("msg");
+                    jwriter.WriteValue(msg);
+                    jwriter.WriteEndObject();
+                    jwriter.Close();
+                }
+
+                type = SimpleRESTfulReturn.Json;
+                apiResponse = returnJsonBuilder.ToString();
+                return true;
+            }
+            catch(Exception ex){
+                type = SimpleRESTfulReturn.PlainText;
+                apiResponse = ex.ToString() + "\r\n ****** \r\n" + rawResponse;
+                return false;
+            }
         }
     }
 }
